@@ -102,7 +102,7 @@ object Server {
   }
 
   def createRoutes(transactor: Transactor[IO])(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
-    val todoRoutes        = createTodoRoutes(transactor)
+    val todoRoutes        = createTodoRoutes(new DoobieTodoDao(transactor))
     val swaggerMiddleware = createSwaggerMiddleware
 
     Router(
@@ -111,24 +111,24 @@ object Server {
     )
   }
 
-  def createTodoRoutes(transactor: Transactor[IO]): RhoRoutes[IO] = {
+  def createTodoRoutes(dao: DoobieTodoDao[IO]): RhoRoutes[IO] = {
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
       // ---------------------------------------------------------------------------------------------------------------------- //
 
-      GET / "todo" |>> { () => new DoobieTodoDao(transactor)
+      GET / "todo" |>> { () => dao
           .findAll()
           .flatMap(Ok(_))
       }
 
       POST / "todo" ^ jsonOf[IO, CreateTodo] |>> { createTodo: CreateTodo =>
-        new DoobieTodoDao(transactor).create(createTodo.name)
+        dao.create(createTodo.name)
           .flatMap(_ => Ok(EmptyResponse()))
       }
 
       POST / "todo" / pathVar[Int] |>> { todoId: Int =>
-        new DoobieTodoDao(transactor).markAsDone(todoId).flatMap {
+        dao.markAsDone(todoId).flatMap {
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
           case _ =>

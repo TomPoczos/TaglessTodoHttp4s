@@ -33,11 +33,16 @@ object Interpreters {
         .transact(xa)
 
     override def create(name: String): F[Int] =
-      sql"insert into todo (name, done) values ($name, 0)".update.run
+      sql"insert into todo (name, done) values ($name, 0)"
+        .update
+        .run
         .transact(xa)
 
     override def markAsDone(id: Int): F[Int] =
-      sql"update todo set done = 1 where id = $id".update.run.transact(xa)
+      sql"update todo set done = 1 where id = $id"
+        .update
+        .run
+        .transact(xa)
 
   }
 }
