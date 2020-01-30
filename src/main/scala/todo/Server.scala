@@ -1,16 +1,7 @@
 package todo
 
 import cats.effect.{ContextShift, IO, Timer}
-import org.http4s.rho.swagger.models.{
-  ApiKeyAuthDefinition,
-  In,
-  Info,
-  Model,
-  ModelImpl,
-  Scheme,
-  SecurityRequirement,
-  StringProperty
-}
+import org.http4s.rho.swagger.models.{ApiKeyAuthDefinition, In, Info, Model, ModelImpl, Scheme, SecurityRequirement, StringProperty}
 import cats.syntax.functor._
 import cats.syntax.apply._
 import doobie.Transactor
@@ -22,7 +13,9 @@ import org.http4s.rho.{RhoMiddleware, RhoRoutes}
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport, SwaggerSyntax}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.staticcontent.{fileService, FileService}
+import org.http4s.server.staticcontent.{FileService, fileService}
+import todo.dataaccess.Algebras.TodoDao
+import todo.dataaccess.Interpreters.DoobieTodoDao
 
 import scala.reflect.runtime.universe.typeOf
 
@@ -124,19 +117,18 @@ object Server {
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
       // ---------------------------------------------------------------------------------------------------------------------- //
 
-      GET / "todo" |>> { () =>
-        sql"select id, name, done from todo".query[Todo].to[List].transact(transactor).flatMap(Ok(_))
+      GET / "todo" |>> { () => new DoobieTodoDao(transactor)
+          .findAll()
+          .flatMap(Ok(_))
       }
 
       POST / "todo" ^ jsonOf[IO, CreateTodo] |>> { createTodo: CreateTodo =>
-        sql"insert into todo (name, done) values (${createTodo.name}, 0)".update.run
-          .transact(transactor)
-          .void
+        new DoobieTodoDao(transactor).create(createTodo.name)
           .flatMap(_ => Ok(EmptyResponse()))
       }
 
       POST / "todo" / pathVar[Int] |>> { todoId: Int =>
-        sql"update todo set done = 1 where id = ${todoId}".update.run.transact(transactor).flatMap {
+        new DoobieTodoDao(transactor).markAsDone(todoId).flatMap {
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
           case _ =>
