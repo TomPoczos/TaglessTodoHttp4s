@@ -13,6 +13,7 @@ import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.staticcontent.{FileService, fileService}
 import org.http4s.{HttpRoutes, Request}
+import todo.dataaccess.Algebras.TodoDao
 import todo.dataaccess.Interpreters.Doobie
 
 import scala.reflect.runtime.universe.typeOf
@@ -63,7 +64,7 @@ object Server {
       .use(_ => IO.never)
   }
 
-  def createRoutes(dao: Doobie[IO])(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
+  def createRoutes(dao: TodoDao[IO, List])(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
     val todoRoutes        = createTodoRoutes(dao)
     val swaggerMiddleware = createSwaggerMiddleware
 
@@ -73,7 +74,7 @@ object Server {
     )
   }
 
-  def createTodoRoutes(dao: Doobie[IO]): RhoRoutes[IO] = {
+  def createTodoRoutes(dao: TodoDao[IO, List]): RhoRoutes[IO] = {
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
