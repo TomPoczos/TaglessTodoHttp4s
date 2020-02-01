@@ -1,7 +1,8 @@
 package todo
 
 import cats.effect.{ContextShift, IO, Timer}
-import org.http4s.rho.swagger.models.{ApiKeyAuthDefinition, In, Info, Model, ModelImpl, Scheme, SecurityRequirement, StringProperty}
+import org.http4s.rho.swagger.models.{ApiKeyAuthDefinition, In, Info, Scheme, SecurityRequirement, StringProperty}
+import _root_.Model.CreateTodo
 import cats.syntax.functor._
 import cats.syntax.apply._
 import doobie.Transactor
@@ -28,42 +29,6 @@ object Server {
   val host     = "localhost"
   val port     = 8080
   val basePath = "/v1"
-
-  case class Todo(
-      id:   Int,
-      name: String,
-      done: Boolean
-  )
-
-  object Todo {
-    implicit val encoder = deriveEncoder[Todo]
-    implicit val decoder = deriveDecoder[Todo]
-  }
-
-  case class CreateTodo(name: String)
-
-  object CreateTodo {
-    implicit val encoder = deriveEncoder[CreateTodo]
-    implicit val decoder = deriveDecoder[CreateTodo]
-
-    val SwaggerModel: Set[Model] = Set(
-      ModelImpl(
-        id          = "CreateTodo",
-        id2         = "CreateTodo",
-        `type`      = Some("object"),
-        description = Some("CreateTodo description"),
-        name        = Some("CreateTodo"),
-        properties = Map(
-          "name" -> StringProperty(
-            required    = true,
-            description = Some("name of the todo item"),
-            enums       = Set()
-          )
-        ),
-        example = Some("""{ "name" : "todo 1" }""")
-      )
-    )
-  }
 
   case class EmptyResponse()
 

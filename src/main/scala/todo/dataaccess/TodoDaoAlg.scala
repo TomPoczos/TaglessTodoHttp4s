@@ -1,8 +1,9 @@
 package todo.dataaccess
 
+import Model.Todo
 import cats.effect.{Async, IO, Sync}
 import doobie.Transactor
-import todo.Server.Todo
+
 import doobie.implicits._
 
 object Algebras {
