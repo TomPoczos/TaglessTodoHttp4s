@@ -57,14 +57,14 @@ object Server {
     import org.http4s.implicits._
     BlazeServerBuilder[IO]
       .bindHttp(port, host)
-      .withHttpApp(createRoutes(transactor).orNotFound)
+      .withHttpApp(createRoutes(new Doobie(transactor)).orNotFound)
       .withServiceErrorHandler(ErrorHandler(_))
       .resource
       .use(_ => IO.never)
   }
 
-  def createRoutes(transactor: Transactor[IO])(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
-    val todoRoutes        = createTodoRoutes(new Doobie(transactor))
+  def createRoutes(dao: Doobie[IO])(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
+    val todoRoutes        = createTodoRoutes(dao)
     val swaggerMiddleware = createSwaggerMiddleware
 
     Router(
