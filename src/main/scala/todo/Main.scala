@@ -13,7 +13,7 @@ object Main extends IOApp {
 
     for {
       _ <- Migrations.run(transactor)
-      _ <- Server.run(new Doobie[IO](transactor))
+      _ <- new Server(new Doobie[IO](transactor)).run()
     } yield ExitCode.Success
   }
 }

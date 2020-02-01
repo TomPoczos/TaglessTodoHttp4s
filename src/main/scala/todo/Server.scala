@@ -18,7 +18,7 @@ import todo.dataaccess.Interpreters.Doobie
 
 import scala.reflect.runtime.universe.typeOf
 
-object Server {
+class Server(dao: TodoDao[IO, List]) {
 
   val todoApiInfo = Info(
     title   = "TODO API",
@@ -53,19 +53,19 @@ object Server {
     }
   }
 
-  def run(dao: TodoDao[IO, List])(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] = {
+  def run()(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
     BlazeServerBuilder[IO]
       .bindHttp(port, host)
-      .withHttpApp(createRoutes(dao).orNotFound)
+      .withHttpApp(createRoutes.orNotFound)
       .withServiceErrorHandler(ErrorHandler(_))
       .resource
       .use(_ => IO.never)
   }
 
-  def createRoutes(dao: TodoDao[IO, List])(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
-    val todoRoutes        = createTodoRoutes(dao)
+  def createRoutes(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
+    val todoRoutes        = createTodoRoutes
     val swaggerMiddleware = createSwaggerMiddleware
 
     Router(
@@ -74,7 +74,7 @@ object Server {
     )
   }
 
-  def createTodoRoutes(dao: TodoDao[IO, List]): RhoRoutes[IO] = {
+  def createTodoRoutes: RhoRoutes[IO] = {
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
