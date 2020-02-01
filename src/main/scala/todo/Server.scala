@@ -1,22 +1,19 @@
 package todo
 
-import cats.effect.{ContextShift, IO, Timer}
-import org.http4s.rho.swagger.models.{ApiKeyAuthDefinition, In, Info, Scheme, SecurityRequirement, StringProperty}
 import _root_.Model.CreateTodo
-import cats.syntax.functor._
+import cats.effect.{ContextShift, IO, Timer}
 import cats.syntax.apply._
 import doobie.Transactor
-import doobie.implicits._
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
-import org.http4s.{HttpRoutes, Request}
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
-import org.http4s.rho.{RhoMiddleware, RhoRoutes}
+import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport, SwaggerSyntax}
+import org.http4s.rho.{RhoMiddleware, RhoRoutes}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.staticcontent.{FileService, fileService}
-import todo.dataaccess.Algebras.TodoDao
-import todo.dataaccess.Interpreters.DoobieTodoDao
+import org.http4s.{HttpRoutes, Request}
+import todo.dataaccess.Interpreters.Doobie
 
 import scala.reflect.runtime.universe.typeOf
 
@@ -67,7 +64,7 @@ object Server {
   }
 
   def createRoutes(transactor: Transactor[IO])(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
-    val todoRoutes        = createTodoRoutes(new DoobieTodoDao(transactor))
+    val todoRoutes        = createTodoRoutes(new Doobie(transactor))
     val swaggerMiddleware = createSwaggerMiddleware
 
     Router(
@@ -76,7 +73,7 @@ object Server {
     )
   }
 
-  def createTodoRoutes(dao: DoobieTodoDao[IO]): RhoRoutes[IO] = {
+  def createTodoRoutes(dao: Doobie[IO]): RhoRoutes[IO] = {
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //

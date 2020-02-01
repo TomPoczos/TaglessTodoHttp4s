@@ -26,7 +26,7 @@ object Interpreters {
 
   import todo.dataaccess.Algebras.TodoDao
 
-  class DoobieTodoDao[F[_]:Sync](xa: Transactor[F]) extends TodoDao[F, List] {
+  class Doobie[F[_]:Sync](xa: Transactor[F]) extends TodoDao[F, List] {
     override def findAll(): F[List[Todo]] =
       sql"select id, name, done from todo"
         .query[Todo]
