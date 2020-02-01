@@ -53,12 +53,12 @@ object Server {
     }
   }
 
-  def run(transactor: Transactor[IO])(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] = {
+  def run(dao: TodoDao[IO, List])(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
     BlazeServerBuilder[IO]
       .bindHttp(port, host)
-      .withHttpApp(createRoutes(new Doobie(transactor)).orNotFound)
+      .withHttpApp(createRoutes(dao).orNotFound)
       .withServiceErrorHandler(ErrorHandler(_))
       .resource
       .use(_ => IO.never)
