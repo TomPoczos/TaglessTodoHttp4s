@@ -64,17 +64,24 @@ class Server(dao: TodoDao[IO, List]) {
       .use(_ => IO.never)
   }
 
+  import cats.syntax.all
+
   def createRoutes(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
-    val todoRoutes        = createTodoRoutes
+    val routes        = createTodoRoutes and createUserRoutes
     val swaggerMiddleware = createSwaggerMiddleware
 
     Router(
       "/docs"  -> fileService[IO](FileService.Config[IO]("./swagger")),
-      basePath -> todoRoutes.toRoutes(swaggerMiddleware)
+      basePath -> routes.toRoutes(swaggerMiddleware)
     )
   }
 
-  def createTodoRoutes: RhoRoutes[IO] = {
+  val createUserRoutes: RhoRoutes[IO] =
+    new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
+
+    }
+
+  val createTodoRoutes: RhoRoutes[IO] =
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
@@ -100,7 +107,6 @@ class Server(dao: TodoDao[IO, List]) {
         }
       }
     }
-  }
 
   def createSwaggerMiddleware: RhoMiddleware[IO] = {
     SwaggerSupport
