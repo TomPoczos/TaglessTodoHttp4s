@@ -8,11 +8,12 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport, SwaggerSyntax}
-import org.http4s.rho.{RhoMiddleware, RhoRoutes}
+import org.http4s.rho.{PathBuilder, RhoMiddleware, RhoRoutes}
 import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.staticcontent.{FileService, fileService}
+import org.http4s.server.staticcontent.{fileService, FileService}
 import org.http4s.{HttpRoutes, Request}
+import shapeless.HNil
 import todo.dataaccess.Algebras.TodoDao
 import todo.dataaccess.Interpreters.Doobie
 
@@ -67,7 +68,8 @@ class Server(dao: TodoDao[IO, List]) {
   import cats.syntax.all
 
   def createRoutes(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
-    val routes        = createTodoRoutes and createUserRoutes
+//    val routes        = createTodoRoutes
+    val routes            = createTodoRoutes and createUserRoutes
     val swaggerMiddleware = createSwaggerMiddleware
 
     Router(
@@ -76,24 +78,21 @@ class Server(dao: TodoDao[IO, List]) {
     )
   }
 
-  val createUserRoutes: RhoRoutes[IO] =
-    new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
-
-    }
-
   val createTodoRoutes: RhoRoutes[IO] =
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
       // ---------------------------------------------------------------------------------------------------------------------- //
 
-      GET / "todo" |>> { () => dao
+      GET / "todo" |>> { () =>
+        dao
           .findAll()
           .flatMap(Ok(_))
       }
 
       POST / "todo" ^ jsonOf[IO, CreateTodo] |>> { createTodo: CreateTodo =>
-        dao.create(createTodo.name)
+        dao
+          .create(createTodo.name)
           .flatMap(_ => Ok(EmptyResponse()))
       }
 
@@ -106,6 +105,18 @@ class Server(dao: TodoDao[IO, List]) {
               InternalServerError(ErrorResponse("Ooops, something went wrong..."))
         }
       }
+    }
+
+  val createUserRoutes: RhoRoutes[IO] =
+    new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
+
+      private val authRoot = POST / "auth"
+
+      "Login" **
+        authRoot |>> {}
+
+      "Create a new user" **
+        authRoot / "new" |>> {}
     }
 
   def createSwaggerMiddleware: RhoMiddleware[IO] = {
