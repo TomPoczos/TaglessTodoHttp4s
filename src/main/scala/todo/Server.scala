@@ -19,6 +19,13 @@ import todo.dataaccess.Interpreters.Doobie
 
 import scala.reflect.runtime.universe.typeOf
 
+case class Login(username: String, PassWord: String)
+
+object Login {
+  implicit val encoder = deriveEncoder[Login]
+  implicit val decoder = deriveDecoder[Login]
+}
+
 class Server(dao: TodoDao[IO, List]) {
 
   val todoApiInfo = Info(
@@ -113,10 +120,14 @@ class Server(dao: TodoDao[IO, List]) {
       private val authRoot = POST / "auth"
 
       "Login" **
-        authRoot |>> {}
+        authRoot ^ jsonOf[IO, Login] |>> { login: Login =>
+        login.username
+      }
 
       "Create a new user" **
-        authRoot / "new" |>> {}
+        authRoot / "new" ^ jsonOf[IO, Login] |>> { login: Login =>
+//        login.username
+      }
     }
 
   def createSwaggerMiddleware: RhoMiddleware[IO] = {
