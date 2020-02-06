@@ -44,6 +44,9 @@ object Interpreters {
         .update
         .run
         .transact(xa)
+  }
+
+  object Doobie {
 
   }
 }

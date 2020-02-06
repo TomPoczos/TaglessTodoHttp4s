@@ -40,5 +40,26 @@ package object Model {
     )
   }
 
+  case class EmptyResponse()
+
+  object EmptyResponse {
+    implicit val encoder = deriveEncoder[EmptyResponse]
+    implicit val decoder = deriveDecoder[EmptyResponse]
+  }
+
+  case class ErrorResponse(message: String)
+
+  object ErrorResponse {
+    implicit val encoder = deriveEncoder[ErrorResponse]
+    implicit val decoder = deriveDecoder[ErrorResponse]
+  }
+
+  case class Login(username: String, PassWord: String)
+
+  object Login {
+    implicit val encoder = deriveEncoder[Login]
+    implicit val decoder = deriveDecoder[Login]
+  }
+
 }
 
