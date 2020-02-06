@@ -52,6 +52,7 @@ class Server(dao: TodoDao[IO, List]) {
 
   object ErrorHandler extends CirceEntityEncoder {
     // NOTE: This import clashes with a lot of rho names hence the wrapper object
+
     import org.http4s.dsl.io._
 
     def apply(request: Request[IO]): PartialFunction[Throwable, IO[org.http4s.Response[IO]]] = {
@@ -72,20 +73,13 @@ class Server(dao: TodoDao[IO, List]) {
       .use(_ => IO.never)
   }
 
-  import cats.syntax.all
-
-  def createRoutes(implicit cs: ContextShift[IO]): HttpRoutes[IO] = {
-//    val routes        = createTodoRoutes
-    val routes            = createTodoRoutes and createUserRoutes
-    val swaggerMiddleware = createSwaggerMiddleware
-
+  def createRoutes(implicit cs: ContextShift[IO]): HttpRoutes[IO] =
     Router(
       "/docs"  -> fileService[IO](FileService.Config[IO]("./swagger")),
-      basePath -> routes.toRoutes(swaggerMiddleware)
+      basePath -> (todoRoutes and userRoutes).toRoutes(swaggerMiddleware)
     )
-  }
 
-  val createTodoRoutes: RhoRoutes[IO] =
+  val todoRoutes: RhoRoutes[IO] =
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
@@ -114,9 +108,12 @@ class Server(dao: TodoDao[IO, List]) {
       }
     }
 
-  val createUserRoutes: RhoRoutes[IO] =
+  val userRoutes: RhoRoutes[IO] =
     new RhoRoutes[IO] with SwaggerSyntax[IO] with CirceInstances with CirceEntityEncoder {
 
+      // I'd actually prefer to not include the method / HTTP verb here,
+      // in which case it's not worth keeping the val either, keeping it here just
+      // as a demonstration of how to reuse paths
       private val authRoot = POST / "auth"
 
       "Login" **
@@ -126,11 +123,11 @@ class Server(dao: TodoDao[IO, List]) {
 
       "Create a new user" **
         authRoot / "new" ^ jsonOf[IO, Login] |>> { login: Login =>
-//        login.username
+        //        login.username
       }
     }
 
-  def createSwaggerMiddleware: RhoMiddleware[IO] = {
+  val swaggerMiddleware: RhoMiddleware[IO] =
     SwaggerSupport
       .apply[IO]
       .createRhoMiddleware(
@@ -145,6 +142,4 @@ class Server(dao: TodoDao[IO, List]) {
           "Bearer" -> ApiKeyAuthDefinition("Authorization", In.HEADER)
         )
       )
-  }
-
 }
