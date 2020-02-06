@@ -11,9 +11,11 @@ object Main extends IOApp {
       "jdbc:sqlite:todo.db"
     )
 
-    val server = new Server(
+    val server = Server(
       Routes(
-        new Doobie[IO](transactor)
+        Doobie[IO](
+          transactor
+        )
       )
     )
 

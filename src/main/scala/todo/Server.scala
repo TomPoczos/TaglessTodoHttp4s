@@ -71,3 +71,7 @@ class Server(routes: RhoRoutes[IO]) {
         )
       )
 }
+
+object Server {
+  def apply(routes: RhoRoutes[IO]) = new Server(routes)
+}

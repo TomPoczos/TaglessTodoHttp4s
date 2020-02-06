@@ -47,7 +47,7 @@ object Interpreters {
   }
 
   object Doobie {
-
+    def apply[F[_]:Sync](xa: Transactor[F]) = new Doobie[F](xa)
   }
 }
 
