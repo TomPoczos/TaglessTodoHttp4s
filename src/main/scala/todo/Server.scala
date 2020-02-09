@@ -26,16 +26,11 @@ class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) {
   val port     = 8080
   val basePath = "/v1"
 
-  object ErrorHandler extends CirceEntityEncoder {
-    // NOTE: This import clashes with a lot of rho names hence the wrapper object
-
-    import org.http4s.Status.InternalServerError
-
+  object ErrorHandler extends CirceEntityEncoder with Http4sDsl[F] {
     def apply(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
       case ex: Throwable =>
         Applicative[F].pure(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
-          // todo I need to figure out how to get this applied implicitly...
-          Http4sDsl[F].http4sInternalServerErrorSyntax(InternalServerError)(ErrorResponse("Something went wrong"))
+          InternalServerError(ErrorResponse("Something went wrong"))
     }
   }
 
