@@ -1,9 +1,11 @@
 package todo
 
 import _root_.Model.{CreateTodo, ErrorResponse}
-import cats.effect.{ContextShift, IO, Timer}
+import cats.Applicative
+import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
 import org.http4s.circe.CirceEntityEncoder
+import org.http4s.dsl.Http4sDsl
 import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport}
 import org.http4s.rho.{RhoMiddleware, RhoRoutes}
@@ -14,7 +16,7 @@ import org.http4s.{HttpRoutes, Request}
 
 import scala.reflect.runtime.universe.typeOf
 
-class Server(routes: RhoRoutes[IO]) {
+class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) {
 
   val todoApiInfo = Info(
     title   = "TODO API",
@@ -24,40 +26,39 @@ class Server(routes: RhoRoutes[IO]) {
   val port     = 8080
   val basePath = "/v1"
 
-
-
   object ErrorHandler extends CirceEntityEncoder {
     // NOTE: This import clashes with a lot of rho names hence the wrapper object
 
-    import org.http4s.dsl.io._
+    import org.http4s.Status.InternalServerError
 
-    def apply(request: Request[IO]): PartialFunction[Throwable, IO[org.http4s.Response[IO]]] = {
+    def apply(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
       case ex: Throwable =>
-        IO(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
-          InternalServerError(ErrorResponse("Something went wrong"))
+        Applicative[F].pure(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
+          // todo I need to figure out how to get this applied implicitly...
+          Http4sDsl[F].http4sInternalServerErrorSyntax(InternalServerError)(ErrorResponse("Something went wrong"))
     }
   }
 
-  def run()(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] = {
+  def run()(implicit cs: ContextShift[F], t: Timer[F]): F[Unit] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
-    BlazeServerBuilder[IO]
+    BlazeServerBuilder[F]
       .bindHttp(port, host)
       .withHttpApp(createRoutes.orNotFound)
       .withServiceErrorHandler(ErrorHandler(_))
       .resource
-      .use(_ => IO.never)
+      .use(_ => Applicative[F].pure(Unit))
   }
 
-  def createRoutes(implicit cs: ContextShift[IO]): HttpRoutes[IO] =
+  def createRoutes(implicit cs: ContextShift[F]): HttpRoutes[F] =
     Router(
-      "/docs"  -> fileService[IO](FileService.Config[IO]("./swagger")),
+      "/docs"  -> fileService[F](FileService.Config[F]("./swagger")),
       basePath -> routes.toRoutes(swaggerMiddleware)
     )
 
-  val swaggerMiddleware: RhoMiddleware[IO] =
+  val swaggerMiddleware: RhoMiddleware[F] =
     SwaggerSupport
-      .apply[IO]
+      .apply[F]
       .createRhoMiddleware(
         swaggerFormats = DefaultSwaggerFormats
           .withSerializers(typeOf[CreateTodo], CreateTodo.SwaggerModel),
@@ -73,5 +74,5 @@ class Server(routes: RhoRoutes[IO]) {
 }
 
 object Server {
-  def apply(routes: RhoRoutes[IO]) = new Server(routes)
+  def apply[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) = new Server(routes)
 }

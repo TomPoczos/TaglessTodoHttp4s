@@ -54,7 +54,6 @@ object Interpreters {
           .option
           .transact(transactor)
       )
-//        .liftF[OptionT]
     }
   }
 
