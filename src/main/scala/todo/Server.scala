@@ -16,7 +16,7 @@ import org.http4s.{HttpRoutes, Request}
 
 import scala.reflect.runtime.universe.typeOf
 
-class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) extends Http4sDsl[F] with CirceEntityEncoder {
+class Server[F[_]:ConcurrentEffect:ContextShift:Timer](routes: RhoRoutes[F]) extends Http4sDsl[F] with CirceEntityEncoder {
 
   val todoApiInfo = Info(
     title   = "TODO API",
@@ -26,7 +26,7 @@ class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) extends Http4sDsl[F] w
   val port     = 8080
   val basePath = "/v1"
 
-  def run()(implicit cs: ContextShift[F], t: Timer[F]): F[Unit] = {
+  def run(): F[Unit] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
     BlazeServerBuilder[F]
@@ -43,7 +43,7 @@ class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) extends Http4sDsl[F] w
         InternalServerError(ErrorResponse("Something went wrong"))
   }
 
-  def createRoutes(implicit cs: ContextShift[F]): HttpRoutes[F] =
+  def createRoutes(): HttpRoutes[F] =
     Router(
       "/docs"  -> fileService[F](FileService.Config[F]("./swagger")),
       basePath -> routes.toRoutes(swaggerMiddleware)
@@ -67,5 +67,5 @@ class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) extends Http4sDsl[F] w
 }
 
 object Server {
-  def apply[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) = new Server(routes)
+  def apply[F[_]:ConcurrentEffect:ContextShift:Timer](routes: RhoRoutes[F]) = new Server(routes)
 }
