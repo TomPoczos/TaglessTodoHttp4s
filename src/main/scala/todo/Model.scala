@@ -118,6 +118,12 @@ package object Model {
   object User {
     case class Id(value: Int)
     case class Name(value: String)
+
+    object Name {
+      implicit def fromLoginUsername(name: Login.Username) =
+        User.Name(name.value)
+    }
+
     case class Salt(value: String)
     case class pwdHash(value: String)
   }
