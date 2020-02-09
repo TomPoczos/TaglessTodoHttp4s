@@ -1,7 +1,7 @@
 package todo
 
 import Model.{CreateTodo, EmptyResponse, ErrorResponse, Login}
-import cats.Monad
+import cats.{Applicative, Monad}
 import cats.effect.{ConcurrentEffect, IO, Sync}
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.rho.RhoRoutes
@@ -33,9 +33,9 @@ class Routes[F[+_]:ConcurrentEffect](dao: TodoDao[F, List]) {
         dao.markAsDone(todoId).flatMap {
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
-//          case _ =>
-//            IO(println(s"Inconsistent data: More than one todo updated in POST /todo/${todoId}")) *>
-//              InternalServerError(ErrorResponse("Ooops, something went wrong..."))
+          case _ =>
+            Applicative[F].pure(println(s"Inconsistent data: More than one todo updated in POST /todo/${todoId}")) *>
+              InternalServerError(ErrorResponse("Ooops, something went wrong..."))
         }
       }
     }
