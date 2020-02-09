@@ -5,7 +5,7 @@ import cats.implicits._
 import doobie.implicits._
 import doobie.Transactor
 
-object Migrations {
+class Migrations(transactor: Transactor[IO]) {
 
   val migrations =
     List(
@@ -27,11 +27,16 @@ object Migrations {
            |  name text not null,
            |  done tinyint not null default 0
            |)
-           |""",
+           |"""
     )
 
-  def run(transactor: Transactor[IO]): IO[List[Int]] =
+  def run: IO[List[Int]] =
     migrations.traverse {
       _.stripMargin.update.run.transact(transactor)
     }
+}
+
+object Migrations {
+  def apply(transactor: Transactor[IO]) =
+    new Migrations(transactor)
 }

@@ -10,18 +10,20 @@ object Main extends IOApp {
       "org.sqlite.JDBC",
       "jdbc:sqlite:todo.db"
     )
-
+    val migrations = Migrations(
+      transactor
+    )
     val server = Server(
       Routes(
-        Doobie[IO](
+        Doobie(
           transactor
         )
       )
     )
 
     for {
-      _ <- Migrations.run(transactor)
-      _ <- server.run()
+      _ <- migrations.run
+      _ <- server.run
     } yield ExitCode.Success
   }
 }
