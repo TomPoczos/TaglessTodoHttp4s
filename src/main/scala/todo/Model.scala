@@ -6,8 +6,8 @@ import org.http4s.rho.swagger.models.{Model, ModelImpl, StringProperty}
 // considered full automatic derivation but probably prefer having all this boilerplate to remembering the auto import
 // at each use site
 
-// added some wrapper case classes to avoid the primitive obsession antipattern as this is a preference of mine,
-// although the extra boilerplate code is definitely a tradeoff worth considering
+// added some wrapper case classes to avoid the primitive obsession antipattern,
+// although the extra boilerplate code and more complex json is a tradeoff not necessarily worth it in all cases.
 
 // opted for nesting rather than hungarian notation-like prependings before generic class names
 

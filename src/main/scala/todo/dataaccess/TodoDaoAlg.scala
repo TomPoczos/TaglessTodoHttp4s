@@ -20,9 +20,9 @@ object Algebras {
     def apply[F[_]](implicit ev: TodoDao[F]): TodoDao[F] = ev
   }
 
-  trait UserDao {
+  trait UserDao[F[_]] {
     def authenticate(login: Login): Unit = {
-      
+
     }
   }
 }
