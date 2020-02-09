@@ -15,8 +15,8 @@ class Migrations(transactor: Transactor[IO]) {
       sql"""
            |create table if not exists user(
            |  id integer primary key,
-           |  name text,
-           |  salt text,
+           |  name text not null unique,
+           |  salt text not null unique,
            |  pwdHash text not null
            |)
            |""",
