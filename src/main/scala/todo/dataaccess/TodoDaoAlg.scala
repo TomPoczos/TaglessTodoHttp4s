@@ -26,24 +26,24 @@ object Interpreters {
 
   import todo.dataaccess.Algebras.TodoDao
 
-  class Doobie[F[_]:Sync](xa: Transactor[F]) extends TodoDao[F, List] {
+  class Doobie[F[_]:Sync](transactor: Transactor[F]) extends TodoDao[F, List] {
     override def findAll(): F[List[Todo]] =
       sql"select id, name, done from todo"
         .query[Todo]
         .to[List]
-        .transact(xa)
+        .transact(transactor)
 
     override def create(name: String): F[Int] =
       sql"insert into todo (name, done) values ($name, 0)"
         .update
         .run
-        .transact(xa)
+        .transact(transactor)
 
     override def markAsDone(id: Int): F[Int] =
       sql"update todo set done = 1 where id = $id"
         .update
         .run
-        .transact(xa)
+        .transact(transactor)
   }
 
   object Doobie {
