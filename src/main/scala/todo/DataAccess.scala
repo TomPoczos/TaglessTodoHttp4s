@@ -1,7 +1,6 @@
 package todo
 
 import Model.{Todo, User}
-import cats.Monad
 import cats.data.OptionT
 import cats.effect.Sync
 import doobie.Transactor
@@ -28,7 +27,7 @@ object Interpreters {
 
   import Algebras.TodoDao
 
-  class Doobie[F[_]:Sync:Monad](transactor: Transactor[F]) extends TodoDao[F] with UserDao[F] {
+  class Doobie[F[_]:Sync](transactor: Transactor[F]) extends TodoDao[F] with UserDao[F] {
     override def findAll(): F[List[Todo]] =
       sql"select id, name, done from todo"
         .query[Todo]
