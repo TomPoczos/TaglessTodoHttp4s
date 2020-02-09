@@ -2,6 +2,7 @@ package object todo
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.http4s.rho.swagger.models.{Model, ModelImpl, StringProperty}
+import _root_.Model.Login.Username
 
 // considered full automatic derivation but probably prefer having all this boilerplate to remembering the auto import
 // at each use site
@@ -13,7 +14,11 @@ import org.http4s.rho.swagger.models.{Model, ModelImpl, StringProperty}
 
 package object Model {
 
-  case class Todo(id: Todo.Id, name: Todo.Name, done: Todo.Done)
+  case class Todo(
+      id:   Todo.Id,
+      name: Todo.Name,
+      done: Todo.Done
+  )
 
   object Todo {
 
@@ -102,4 +107,20 @@ package object Model {
     implicit val encoder = deriveEncoder[Login]
     implicit val decoder = deriveDecoder[Login]
   }
+
+  case class User(
+      id:      User.Id,
+      name:    User.Name,
+      salt:    User.Salt,
+      pwdHash: User.pwdHash
+  )
+
+  object User {
+    case class Id(value: Int)
+    case class Name(value: String)
+    case class Salt(value: String)
+    case class pwdHash(value: String)
+  }
+
+  case class Authenticated(value: Boolean)
 }

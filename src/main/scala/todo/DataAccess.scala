@@ -1,9 +1,12 @@
-package todo.dataaccess
+package todo
 
-import Model.{Login, Todo}
-import cats.effect.{Async, IO, Sync}
+import Model.{Todo, User}
+import cats.Monad
+import cats.data.OptionT
+import cats.effect.Sync
 import doobie.Transactor
 import doobie.implicits._
+import todo.Algebras.UserDao
 
 object Algebras {
 
@@ -16,22 +19,16 @@ object Algebras {
     def markAsDone(id: Int): F[Int]
   }
 
-  object TodoDao {
-    def apply[F[_]](implicit ev: TodoDao[F]): TodoDao[F] = ev
-  }
-
   trait UserDao[F[_]] {
-    def authenticate(login: Login): Unit = {
-
-    }
+    def find(userName: User.Name): OptionT[F, User]
   }
 }
 
 object Interpreters {
 
-  import todo.dataaccess.Algebras.TodoDao
+  import Algebras.TodoDao
 
-  class Doobie[F[_]:Sync](transactor: Transactor[F]) extends TodoDao[F] {
+  class Doobie[F[_]:Sync:Monad](transactor: Transactor[F]) extends TodoDao[F] with UserDao[F] {
     override def findAll(): F[List[Todo]] =
       sql"select id, name, done from todo"
         .query[Todo]
@@ -49,6 +46,16 @@ object Interpreters {
         .update
         .run
         .transact(transactor)
+
+    override def find(userName: User.Name): OptionT[F, User] = {
+      OptionT(
+        sql"select id, name, salt, pwdHash from user where name = '${userName.value}'"
+          .query[User]
+          .option
+          .transact(transactor)
+      )
+//        .liftF[OptionT]
+    }
   }
 
   object Doobie {

@@ -6,7 +6,7 @@ import cats.effect.{ConcurrentEffect, IO, Sync}
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.rho.RhoRoutes
 import org.http4s.rho.swagger.SwaggerSyntax
-import todo.dataaccess.Algebras.TodoDao
+import Algebras.TodoDao
 import cats.implicits._
 
 class Routes[F[+_]:ConcurrentEffect](dao: TodoDao[F]) {

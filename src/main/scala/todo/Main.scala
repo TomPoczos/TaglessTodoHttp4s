@@ -2,7 +2,7 @@ package todo
 
 import cats.effect.{ExitCode, IO, IOApp}
 import doobie.Transactor
-import todo.dataaccess.Interpreters.Doobie
+import Interpreters.Doobie
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
