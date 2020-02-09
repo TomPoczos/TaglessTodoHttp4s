@@ -1,9 +1,8 @@
 package todo.dataaccess
 
-import Model.Todo
+import Model.{Login, Todo}
 import cats.effect.{Async, IO, Sync}
 import doobie.Transactor
-
 import doobie.implicits._
 
 object Algebras {
@@ -19,6 +18,12 @@ object Algebras {
 
   object TodoDao {
     def apply[F[_]](implicit ev: TodoDao[F]): TodoDao[F] = ev
+  }
+
+  trait UserDao {
+    def authenticate(login: Login): Unit = {
+      
+    }
   }
 }
 
