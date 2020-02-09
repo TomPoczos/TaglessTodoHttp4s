@@ -8,9 +8,9 @@ import doobie.implicits._
 
 object Algebras {
 
-  trait TodoDao[F[_], G[_]] {
+  trait TodoDao[F[_]] {
 
-    def findAll(): F[G[Todo]]
+    def findAll(): F[List[Todo]]
 
     def create(name: String): F[Int]
 
@@ -18,7 +18,7 @@ object Algebras {
   }
 
   object TodoDao {
-    def apply[F[_], G[_]](implicit ev: TodoDao[F, G]): TodoDao[F, G] = ev
+    def apply[F[_]](implicit ev: TodoDao[F]): TodoDao[F] = ev
   }
 }
 
@@ -26,7 +26,7 @@ object Interpreters {
 
   import todo.dataaccess.Algebras.TodoDao
 
-  class Doobie[F[_]:Sync](transactor: Transactor[F]) extends TodoDao[F, List] {
+  class Doobie[F[_]:Sync](transactor: Transactor[F]) extends TodoDao[F] {
     override def findAll(): F[List[Todo]] =
       sql"select id, name, done from todo"
         .query[Todo]

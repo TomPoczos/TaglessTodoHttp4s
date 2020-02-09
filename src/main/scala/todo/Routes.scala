@@ -9,7 +9,7 @@ import org.http4s.rho.swagger.SwaggerSyntax
 import todo.dataaccess.Algebras.TodoDao
 import cats.implicits._
 
-class Routes[F[+_]:ConcurrentEffect](dao: TodoDao[F, List]) {
+class Routes[F[+_]:ConcurrentEffect](dao: TodoDao[F]) {
 
   val todoRoutes: RhoRoutes[F] =
     new RhoRoutes[F] with SwaggerSyntax[F] with CirceInstances with CirceEntityEncoder {
@@ -56,7 +56,7 @@ class Routes[F[+_]:ConcurrentEffect](dao: TodoDao[F, List]) {
 }
 
 object Routes {
-  def apply[F[+_]:ConcurrentEffect:Sync:Monad](dao: TodoDao[F, List]) = {
+  def apply[F[+_]:ConcurrentEffect:Sync:Monad](dao: TodoDao[F]) = {
     val routes = new Routes(dao)
     routes.todoRoutes and routes.userRoutes
   }
