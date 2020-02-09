@@ -16,7 +16,7 @@ import org.http4s.{HttpRoutes, Request}
 
 import scala.reflect.runtime.universe.typeOf
 
-class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) {
+class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) extends Http4sDsl[F] with CirceEntityEncoder {
 
   val todoApiInfo = Info(
     title   = "TODO API",
@@ -26,23 +26,21 @@ class Server[F[_]:ConcurrentEffect](routes: RhoRoutes[F]) {
   val port     = 8080
   val basePath = "/v1"
 
-  object ErrorHandler extends CirceEntityEncoder with Http4sDsl[F] {
-    def apply(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
-      case ex: Throwable =>
-        Applicative[F].pure(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
-          InternalServerError(ErrorResponse("Something went wrong"))
-    }
-  }
-
   def run()(implicit cs: ContextShift[F], t: Timer[F]): F[Unit] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
     BlazeServerBuilder[F]
       .bindHttp(port, host)
       .withHttpApp(createRoutes.orNotFound)
-      .withServiceErrorHandler(ErrorHandler(_))
+      .withServiceErrorHandler(errorHandler(_))
       .resource
       .use(_ => Applicative[F].pure(Unit))
+  }
+
+  def errorHandler(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
+    case ex: Throwable =>
+      Applicative[F].pure(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
+        InternalServerError(ErrorResponse("Something went wrong"))
   }
 
   def createRoutes(implicit cs: ContextShift[F]): HttpRoutes[F] =
