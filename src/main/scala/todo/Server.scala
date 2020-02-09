@@ -2,7 +2,7 @@ package todo
 
 import _root_.Model.{CreateTodo, ErrorResponse}
 import cats.effect.{ContextShift, IO, Timer}
-import cats.syntax.apply._
+import cats.implicits._
 import org.http4s.circe.CirceEntityEncoder
 import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport}

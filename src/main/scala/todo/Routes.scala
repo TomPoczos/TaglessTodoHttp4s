@@ -6,7 +6,7 @@ import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.rho.RhoRoutes
 import org.http4s.rho.swagger.SwaggerSyntax
 import todo.dataaccess.Algebras.TodoDao
-import cats.syntax.all._
+import cats.implicits._
 
 class Routes(dao: TodoDao[IO, List]) {
 
