@@ -16,22 +16,18 @@ import org.http4s.{HttpRoutes, Request}
 
 import scala.reflect.runtime.universe.typeOf
 
-class Server[F[_]:ConcurrentEffect:ContextShift:Timer](routes: RhoRoutes[F]) extends Http4sDsl[F] with CirceEntityEncoder {
+class Server[F[_]:ConcurrentEffect:ContextShift:Timer](routes: HttpRoutes[F]) extends Http4sDsl[F] with CirceEntityEncoder {
 
-  val todoApiInfo = Info(
-    title   = "TODO API",
-    version = "0.1.0"
-  )
-  val host     = "localhost"
-  val port     = 8080
-  val basePath = "/v1"
 
-  def run(): F[Unit] = {
+  val host = "localhost"
+  val port = 8080
+
+  def run: F[Unit] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
     BlazeServerBuilder[F]
       .bindHttp(port, host)
-      .withHttpApp(createRoutes.orNotFound)
+      .withHttpApp(routes.orNotFound)
       .withServiceErrorHandler(errorHandler(_))
       .resource
       .use(_ => Applicative[F].pure(Unit))
@@ -42,30 +38,8 @@ class Server[F[_]:ConcurrentEffect:ContextShift:Timer](routes: RhoRoutes[F]) ext
       Applicative[F].pure(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
         InternalServerError(ErrorResponse("Something went wrong"))
   }
-
-  def createRoutes(): HttpRoutes[F] =
-    Router(
-      "/docs"  -> fileService[F](FileService.Config[F]("./swagger")),
-      basePath -> routes.toRoutes(swaggerMiddleware)
-    )
-
-  val swaggerMiddleware: RhoMiddleware[F] =
-    SwaggerSupport
-      .apply[F]
-      .createRhoMiddleware(
-        swaggerFormats = DefaultSwaggerFormats
-          .withSerializers(typeOf[CreateTodo], CreateTodo.SwaggerModel),
-        apiInfo  = todoApiInfo,
-        host     = Some(s"${host}:${port}"),
-        schemes  = List(Scheme.HTTP),
-        basePath = Some(basePath),
-        security = List(SecurityRequirement("Bearer", List())),
-        securityDefinitions = Map(
-          "Bearer" -> ApiKeyAuthDefinition("Authorization", In.HEADER)
-        )
-      )
 }
 
 object Server {
-  def apply[F[_]:ConcurrentEffect:ContextShift:Timer](routes: RhoRoutes[F]) = new Server(routes)
+  def apply[F[_]:ConcurrentEffect:ContextShift:Timer](routes: HttpRoutes[F]) = new Server(routes)
 }
