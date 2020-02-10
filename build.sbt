@@ -7,6 +7,9 @@ version := "0.1"
 scalaVersion := "2.12.10"
 resolvers += Resolver.sonatypeRepo("releases")
 scalacOptions += "-Ypartial-unification"
+
+fork in run := true
+
 libraryDependencies ++= Seq(
 
   "org.typelevel"  %% "cats-core"            % catsVersion,
