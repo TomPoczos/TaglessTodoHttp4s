@@ -17,7 +17,7 @@ trait ApiInfoConfig {
 
 trait DbConfig {
   val dbDriver = "org.sqlite.JDBC"
-  val dbUrl = "jdbc:sqlite:todo.db"
+  val dbUrl    = "jdbc:sqlite:todo.db"
 }
 
 object Config extends HttpServerConig with ApiInfoConfig with DbConfig

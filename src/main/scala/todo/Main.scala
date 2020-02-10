@@ -1,8 +1,9 @@
 package todo
 
 import cats.effect.{ExitCode, IO, IOApp}
+import cats.implicits._
 import doobie.Transactor
-import Interpreters.Doobie
+import todo.Interpreters.Doobie
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
@@ -17,19 +18,15 @@ object Main extends IOApp {
       Migrations(
         transactor
       )
-    val server =
+    val serverResource =
       Server(
         Routes(
           Doobie(
             transactor
           )
         )
-      )
+      ).resource
 
-    for {
-      _ <- migrations.run
-      serverResource = server.run
-      _ <- serverResource.use(_ => IO.never)
-    } yield ExitCode.Success
+    migrations.run *> serverResource.use(_ => IO.never) *> IO(ExitCode.Success)
   }
 }

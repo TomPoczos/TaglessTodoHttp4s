@@ -2,7 +2,6 @@ package object todo
 
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.http4s.rho.swagger.models.{Model, ModelImpl, StringProperty}
-import _root_.Model.Login.Username
 
 // considered full automatic derivation but probably prefer having all this boilerplate to remembering the auto import
 // at each use site
@@ -116,7 +115,7 @@ package object Model {
   )
 
   object User {
-    case class Id(value: Int)
+    case class Id(value:   Int)
     case class Name(value: String)
 
     object Name {
@@ -124,7 +123,7 @@ package object Model {
         User.Name(name.value)
     }
 
-    case class Salt(value: String)
+    case class Salt(value:    String)
     case class pwdHash(value: String)
   }
 

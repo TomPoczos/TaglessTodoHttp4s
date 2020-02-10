@@ -27,7 +27,7 @@ object Interpreters {
 
   import Algebras.TodoDao
 
-  class Doobie[F[_]:Sync](transactor: Transactor[F]) extends TodoDao[F] with UserDao[F] {
+  class Doobie[F[_]: Sync](transactor: Transactor[F]) extends TodoDao[F] with UserDao[F] {
     override def findAll(): F[List[Todo]] =
       sql"select id, name, done from todo"
         .query[Todo]
@@ -35,15 +35,11 @@ object Interpreters {
         .transact(transactor)
 
     override def create(name: String): F[Int] =
-      sql"insert into todo (name, done) values ($name, 0)"
-        .update
-        .run
+      sql"insert into todo (name, done) values ($name, 0)".update.run
         .transact(transactor)
 
     override def markAsDone(id: Int): F[Int] =
-      sql"update todo set done = 1 where id = $id"
-        .update
-        .run
+      sql"update todo set done = 1 where id = $id".update.run
         .transact(transactor)
 
     override def find(userName: User.Name): OptionT[F, User] = {
@@ -57,7 +53,6 @@ object Interpreters {
   }
 
   object Doobie {
-    def apply[F[_]:Sync](xa: Transactor[F]) = new Doobie[F](xa)
+    def apply[F[_]: Sync](xa: Transactor[F]) = new Doobie[F](xa)
   }
 }
-

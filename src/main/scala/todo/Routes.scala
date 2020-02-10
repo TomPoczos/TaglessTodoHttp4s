@@ -85,7 +85,7 @@ object Routes {
   )(implicit config: HttpServerConig with ApiInfoConfig): HttpRoutes[F] = {
     val routes = new Routes(dao)
     Router[F](
-      "/docs" -> fileService[F](FileService.Config[F]("./swagger")),
+      "/docs"         -> fileService[F](FileService.Config[F]("./swagger")),
       config.basePath -> (routes.todoRoutes and routes.userRoutes).toRoutes(routes.swaggerMiddleware)
     )
   }
