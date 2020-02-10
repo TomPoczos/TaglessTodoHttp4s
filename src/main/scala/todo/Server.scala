@@ -2,7 +2,7 @@ package todo
 
 import _root_.Model.ErrorResponse
 import cats.Applicative
-import cats.effect.{ConcurrentEffect, ContextShift, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
 import cats.implicits._
 import org.http4s.circe.CirceEntityEncoder
 import org.http4s.dsl.Http4sDsl
@@ -13,7 +13,7 @@ class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])
     extends Http4sDsl[F]
     with CirceEntityEncoder {
 
-  def run: F[Unit] = {
+  def run: Resource[F, org.http4s.server.Server[F]] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
     BlazeServerBuilder[F]
@@ -21,7 +21,7 @@ class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])
       .withHttpApp(routes.orNotFound)
       .withServiceErrorHandler(errorHandler(_))
       .resource
-      .use(_ => Applicative[F].pure(Unit))
+//      .use(_ => Applicative[F].pure(Unit))
   }
 
   def errorHandler(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {

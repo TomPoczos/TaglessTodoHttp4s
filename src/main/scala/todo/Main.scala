@@ -28,7 +28,8 @@ object Main extends IOApp {
 
     for {
       _ <- migrations.run
-      _ <- server.run
+      serverResource = server.run
+      _ <- serverResource.use(_ => IO.never)
     } yield ExitCode.Success
   }
 }
