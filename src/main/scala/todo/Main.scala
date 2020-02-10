@@ -6,9 +6,12 @@ import Interpreters.Doobie
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {
+
+    implicit val config = Config
+
     val transactor = Transactor.fromDriverManager[IO](
-      "org.sqlite.JDBC",
-      "jdbc:sqlite:todo.db"
+      Config.dbDriver,
+      Config.dbUrl
     )
     val migrations =
       Migrations(

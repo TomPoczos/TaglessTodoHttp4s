@@ -1,32 +1,23 @@
 package todo
 
-import _root_.Model.{CreateTodo, ErrorResponse}
+import _root_.Model.ErrorResponse
 import cats.Applicative
 import cats.effect.{ConcurrentEffect, ContextShift, Timer}
 import cats.implicits._
 import org.http4s.circe.CirceEntityEncoder
 import org.http4s.dsl.Http4sDsl
-import org.http4s.rho.swagger.models._
-import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport}
-import org.http4s.rho.{RhoMiddleware, RhoRoutes}
-import org.http4s.server.Router
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.server.staticcontent.{FileService, fileService}
 import org.http4s.{HttpRoutes, Request}
 
-import scala.reflect.runtime.universe.typeOf
-
-class Server[F[_]:ConcurrentEffect:ContextShift:Timer](routes: HttpRoutes[F]) extends Http4sDsl[F] with CirceEntityEncoder {
-
-
-  val host = "localhost"
-  val port = 8080
+class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])(implicit config: HttpServerConig)
+    extends Http4sDsl[F]
+    with CirceEntityEncoder {
 
   def run: F[Unit] = {
     // NOTE: the import is necessary to get .orNotFound but clashes with a lot of rho names that's why it's imported inside the method
     import org.http4s.implicits._
     BlazeServerBuilder[F]
-      .bindHttp(port, host)
+      .bindHttp(config.port, config.host)
       .withHttpApp(routes.orNotFound)
       .withServiceErrorHandler(errorHandler(_))
       .resource
@@ -41,5 +32,6 @@ class Server[F[_]:ConcurrentEffect:ContextShift:Timer](routes: HttpRoutes[F]) ex
 }
 
 object Server {
-  def apply[F[_]:ConcurrentEffect:ContextShift:Timer](routes: HttpRoutes[F]) = new Server(routes)
+  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])(implicit config: HttpServerConig) =
+    new Server(routes)
 }
