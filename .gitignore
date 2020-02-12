@@ -23,3 +23,6 @@ project/plugins/project/
 
 *.class
 *.log
+
+.metals/*
+project/*
