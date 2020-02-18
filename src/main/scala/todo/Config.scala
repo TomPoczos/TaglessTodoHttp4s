@@ -20,4 +20,4 @@ trait DbConfig {
   val dbUrl    = "jdbc:sqlite:todo.db"
 }
 
-object Config extends HttpServerConig with ApiInfoConfig with DbConfig
+object Config extends HttpServerConig with ApiInfoConfig with DbConfig with Secrets

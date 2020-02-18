@@ -19,7 +19,7 @@ object Algebras {
   }
 
   trait UserDao[F[_]] {
-    def find(userName: User.Name): OptionT[F, User]
+    def find(userId: User.Id): F[Option[User]]
   }
 }
 
@@ -42,14 +42,11 @@ object Interpreters {
       sql"update todo set done = 1 where id = $id".update.run
         .transact(transactor)
 
-    override def find(userName: User.Name): OptionT[F, User] = {
-      OptionT(
-        sql"select id, name, salt, pwdHash from user where name = '${userName.value}'"
+    override def find(userId: User.Id): F[Option[User]] =
+        sql"select id, name, salt, pwdHash from user where id = '${userId.value}'"
           .query[User]
           .option
           .transact(transactor)
-      )
-    }
   }
 
   object Doobie {

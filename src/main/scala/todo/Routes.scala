@@ -1,43 +1,45 @@
 package todo
 
-import Model.{CreateTodo, EmptyResponse, ErrorResponse, Login}
-import cats.Applicative
-import cats.effect.{ConcurrentEffect, ContextShift, Sync}
+import Model._
+import cats._
+import cats.effect.{ConcurrentEffect, ContextShift}
 import cats.implicits._
-import org.http4s.HttpRoutes
+import org.http4s._
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport, SwaggerSyntax}
 import org.http4s.rho.{RhoMiddleware, RhoRoutes}
-import org.http4s.server.Router
+import org.http4s.server._
 import org.http4s.server.staticcontent.{fileService, FileService}
 import todo.Algebras.TodoDao
 
 import scala.reflect.runtime.universe.typeOf
 
-class Routes[F[+_]: ConcurrentEffect: Sync: ContextShift](dao: TodoDao[F])(
+class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao: TodoDao[F])(
     implicit config: HttpServerConig with ApiInfoConfig
-) {
+) extends SwaggerSyntax[F]
+    with CirceInstances
+    with CirceEntityEncoder {
 
   val todoRoutes: RhoRoutes[F] =
-    new RhoRoutes[F] with SwaggerSyntax[F] with CirceInstances with CirceEntityEncoder {
+    new RhoRoutes[F]() {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
       // ---------------------------------------------------------------------------------------------------------------------- //
 
-      GET / "todo" |>> { () =>
+      GET / "todo" >>> auth.auth |>> { user: User =>
         dao
           .findAll()
           .flatMap(Ok(_))
       }
 
-      POST / "todo" ^ jsonOf[F, CreateTodo] |>> { createTodo: CreateTodo =>
+      POST / "todo" >>> auth.auth ^ jsonOf[F, CreateTodo] |>> { (user: User, createTodo: CreateTodo) =>
         dao
           .create(createTodo.name)
           .flatMap(_ => Ok(EmptyResponse()))
       }
 
-      POST / "todo" / pathVar[Int] |>> { todoId: Int =>
+      POST / "todo" / pathVar[Int] >>> auth.auth |>> { (todoId: Int, user: User) =>
         dao.markAsDone(todoId).flatMap {
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
@@ -49,7 +51,7 @@ class Routes[F[+_]: ConcurrentEffect: Sync: ContextShift](dao: TodoDao[F])(
     }
 
   val userRoutes: RhoRoutes[F] =
-    new RhoRoutes[F] with SwaggerSyntax[F] with CirceInstances with CirceEntityEncoder {
+    new RhoRoutes[F] {
 
       "Login" **
         POST / "auth" ^ jsonOf[F, Login] |>> { login: Login =>
@@ -77,16 +79,30 @@ class Routes[F[+_]: ConcurrentEffect: Sync: ContextShift](dao: TodoDao[F])(
           "Bearer" -> ApiKeyAuthDefinition("Authorization", In.HEADER)
         )
       )
+
+  val router = Router[F](
+    "/docs" -> fileService[F](FileService.Config[F]("./swagger")),
+    config.basePath ->
+      auth.middleware(
+        auth.toService(
+          (todoRoutes and userRoutes).toRoutes(swaggerMiddleware)
+        )
+      )
+  )
 }
 
 object Routes {
-  def apply[F[+_]: ConcurrentEffect: Sync: ContextShift](
+
+  def apply[F[+_]: ConcurrentEffect: ContextShift](
+      auth:          Authentication[F],
       dao:           TodoDao[F]
   )(implicit config: HttpServerConig with ApiInfoConfig): HttpRoutes[F] = {
-    val routes = new Routes(dao)
-    Router[F](
-      "/docs"         -> fileService[F](FileService.Config[F]("./swagger")),
-      config.basePath -> (routes.todoRoutes and routes.userRoutes).toRoutes(routes.swaggerMiddleware)
-    )
+    val routes = new Routes(auth, dao)
+    ???
+    //    Router[F](
+    //      "/docs"         -> fileService[F](FileService.Config[F]("./swagger")),
+    //      config.basePath -> (routes.todoRoutes and routes.userRoutes)
+    //        .toRoutes(routes.authMiddleware.andThen(routes.swaggerMiddleware) )
+    //    )
   }
 }
