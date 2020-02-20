@@ -31,17 +31,18 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
   val crypto = CryptoBits(key)
   val clock  = Clock.create
 
-  val authUser: Kleisli[F, Request[F], Either[String, User]] = Kleisli { request =>
-    val message: Either[String, User.Id] = for {
-      header <- request.headers.get(Authorization).toRight("Couldn't find an Authorization header")
-      token <- crypto.validateSignedToken(header.value).toRight("Invalid token")
-      message <- Either.catchOnly[NumberFormatException](token.toInt).bimap(_.toString, User.Id)
+  val authUser: Kleisli[F, Request[F], Either[ErrorMsg, User]] = Kleisli { request =>
+    val message: Either[ErrorMsg, User.Id] = for {
+      header <- request.headers.get(Authorization).toRight(ErrorMsg("Couldn't find an Authorization header"))
+      token <- crypto.validateSignedToken(header.value).toRight(ErrorMsg("Invalid token"))
+      message <- Either.catchOnly[NumberFormatException](token.toInt).bimap(err => ErrorMsg(err.toString), User.Id)
     } yield message
+
     message
       .map(
         dao
           .find(_)
-          .map(_.toRight("invalid token"))
+          .map(_.toRight(ErrorMsg("user doesn't exist")))
       )
       .sequence
       .map(_.flatten)
@@ -55,10 +56,9 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
     } yield user
       .map((user: User) => Token(crypto.signToken(user.id.value.toString, time.toString)))
       .toRight(ErrorMsg("Invalid credentials"))
-
   }
 
-  val onFailure: AuthedRoutes[String, F] = Kleisli(req => OptionT.liftF(Forbidden(req.authInfo)))
+  val onFailure: AuthedRoutes[ErrorMsg, F] = Kleisli(req => OptionT.liftF(Forbidden(req.authInfo)))
 
   val middleware = AuthMiddleware(authUser, onFailure)
 
