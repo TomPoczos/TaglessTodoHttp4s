@@ -1,6 +1,6 @@
 package todo
 
-import Model.User
+import Model.{ErrorMsg, Login, Token, User}
 import cats.data.{Kleisli, OptionT}
 import cats.effect.{Clock, _}
 import cats.implicits._
@@ -36,28 +36,31 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
       message <- Either.catchOnly[NumberFormatException](token.toInt).bimap(_.toString, User.Id)
     } yield message
     message
-      .map(dao.find(_)
-        .map(_.toRight("invalid token")))
+      .map(
+        dao
+          .find(_)
+          .map(_.toRight("invalid token"))
+      )
       .sequence
       .map(_.flatten)
   }
-  def verifyLogin(request: Request[F]): F[Either[String, User]] = ??? // gotta figure out how to do the form
 
-  def getResp(request: Request[F], time: String): F[http4s.Response[F]] =
-    verifyLogin(request).flatMap {
-      case Left(error) =>
-        Forbidden(error)
-      case Right(user) =>
-        val message = crypto.signToken(user.id.value.toString, time)
-        Ok("Logged in!").map(_.addCookie(ResponseCookie("authcookie", message)))
-    }
+//  def XXXverifyLogin(request: Request[F]): F[Either[Error, User]] = ??? // gotta figure out how to do the form
 
-  val logIn: Kleisli[F, Request[F], http4s.Response[F]] = Kleisli { request =>
-    for {
-      time <- clock.monotonic(MILLISECONDS).map(_.toString)
-      resp <- getResp(request, time)
-    } yield resp
+  def verifylogin(login: Login): F[Either[ErrorMsg, (User, Token)]] = {
+//    val message = crypto.signToken("user.id.value.toString")
+//    val message = crypto.signToken(user.id.value.toString)
+
+    ???
   }
+
+//  def YYYverifyLogin(login: Login): F[Either[String, User]] = {
+//    case Left(error) =>
+//      Forbidden(error)
+//    case Right(user) =>
+//      val message = crypto.signToken(user.id.value.toString)
+//      Ok("Logged in!").map(_.addCookie(ResponseCookie("authcookie", message)))
+//  }
 
   val onFailure: AuthedRoutes[String, F] = Kleisli(req => OptionT.liftF(Forbidden(req.authInfo)))
 

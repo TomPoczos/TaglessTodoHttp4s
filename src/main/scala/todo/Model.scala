@@ -128,4 +128,7 @@ package object Model {
   }
 
   case class Authenticated(value: Boolean)
+
+  case class Token(value: String)
+  case class ErrorMsg(value: String)
 }
