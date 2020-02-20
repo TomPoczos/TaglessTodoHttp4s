@@ -1,5 +1,7 @@
 package todo
 
+import java.util.UUID
+
 import Model.{ErrorMsg, Login, Token, User}
 import cats.data.{Kleisli, OptionT}
 import cats.effect.{Clock, _}
@@ -45,22 +47,16 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
       .map(_.flatten)
   }
 
-//  def XXXverifyLogin(request: Request[F]): F[Either[Error, User]] = ??? // gotta figure out how to do the form
+  def issueToken(login: Login): F[Either[ErrorMsg, Token]] = {
 
-  def verifylogin(login: Login): F[Either[ErrorMsg, (User, Token)]] = {
-//    val message = crypto.signToken("user.id.value.toString")
-//    val message = crypto.signToken(user.id.value.toString)
+    for {
+      user <- dao.findByName(login.username)
+      time <- clock.monotonic(MILLISECONDS)
+    } yield user
+      .map((user: User) => Token(crypto.signToken(user.id.value.toString, time.toString)))
+      .toRight(ErrorMsg("Invalid credentials"))
 
-    ???
   }
-
-//  def YYYverifyLogin(login: Login): F[Either[String, User]] = {
-//    case Left(error) =>
-//      Forbidden(error)
-//    case Right(user) =>
-//      val message = crypto.signToken(user.id.value.toString)
-//      Ok("Logged in!").map(_.addCookie(ResponseCookie("authcookie", message)))
-//  }
 
   val onFailure: AuthedRoutes[String, F] = Kleisli(req => OptionT.liftF(Forbidden(req.authInfo)))
 

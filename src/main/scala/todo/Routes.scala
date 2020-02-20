@@ -54,20 +54,18 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
     new RhoRoutes[F] {
 
       "Login" **
-        POST / "auth" ^ jsonOf[F, Login] |>> { login: Login =>
-        auth
-          .verifylogin(login)
-          .flatMap {
-            case Left(error) =>
-              Forbidden(error.value)
-            case Right((_, token)) =>
-              Ok("Logged in!").map(_.addCookie(ResponseCookie("authcookie", token.value)))
-          }
-      }
+        POST / "auth" ^ jsonOf[F, Login] |>> { login: Login => Ok("") }
 
       "Create a new user" **
         POST / "auth" / "new" ^ jsonOf[F, Login] |>> { login: Login =>
-        //        login.username
+        auth
+          .issueToken(login)
+          .flatMap {
+            case Left(error) =>
+              Forbidden(error.value)
+            case Right(token) =>
+              Ok("Logged in!").map(_.addCookie(ResponseCookie("authcookie", token.value)))
+          }
       }
     }
 

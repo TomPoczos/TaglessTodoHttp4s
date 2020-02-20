@@ -20,6 +20,7 @@ object Algebras {
 
   trait UserDao[F[_]] {
     def find(userId: User.Id): F[Option[User]]
+    def findByName(username: User.Name): F[Option[User]]
   }
 }
 
@@ -47,6 +48,8 @@ object Interpreters {
           .query[User]
           .option
           .transact(transactor)
+
+    override def findByName(username: User.Name): F[Option[User]] = ???
   }
 
   object Doobie {
