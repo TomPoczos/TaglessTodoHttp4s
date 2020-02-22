@@ -55,11 +55,6 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
 
       "Login" **
         POST / "auth" ^ jsonOf[F, Login] |>> { login: Login =>
-        Ok("")
-      }
-
-      "Create a new user" **
-        POST / "auth" / "new" ^ jsonOf[F, Login] |>> { login: Login =>
         auth
           .issueToken(login)
           .flatMap {
@@ -68,6 +63,10 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
             case Right(token) =>
               Ok("Logged in!").map(_.addCookie(ResponseCookie("authcookie", token.value)))
           }
+      }
+
+      "Create a new user" **
+        POST / "auth" / "new" ^ jsonOf[F, Login] |>> { login: Login =>
       }
     }
 

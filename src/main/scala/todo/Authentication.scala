@@ -1,7 +1,8 @@
 package todo
 
 import Model.{ErrorMsg, Login, Token, User}
-import cats.data.{Kleisli, OptionT}
+import cats.Applicative
+import cats.data.{EitherT, Kleisli, OptionT}
 import cats.effect.{Clock, _}
 import cats.implicits._
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
@@ -12,6 +13,7 @@ import org.http4s.server.AuthMiddleware
 import org.http4s.{AuthedRoutes, Request}
 import org.reactormonk.{CryptoBits, PrivateKey}
 import todo.Algebras.UserDao
+import com.github.t3hnar.bcrypt._
 
 import scala.concurrent.duration.MILLISECONDS
 
@@ -20,13 +22,34 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
     with CirceInstances
     with CirceEntityEncoder {
 
-  def issueToken(login: Login): F[Either[ErrorMsg, Token]] =
-    for {
-      user <- dao.findByName(login.username)
-      time <- clock.monotonic(MILLISECONDS)
-    } yield user
-      .map((user: User) => Token(crypto.signToken(user.id.value.toString, time.toString)))
-      .toRight(ErrorMsg("Invalid credentials"))
+
+  def issueToken(login: Login) = { // : F[Either[ErrorMsg, Token]] = {
+    def validatePassword(password: Login.Password, hash: User.pwdHash, salt: User.Salt): Boolean =
+      (salt.value + password.value).isBcrypted(hash.value)
+
+    dao
+      .findByName(login.username)
+      .filter(user => validatePassword(login.password, user.pwdHash, user.salt))
+      .semiflatMap { user =>
+        clock
+          .monotonic(MILLISECONDS)
+          .map(time => Token(crypto.signToken(user.id.value.toString, time.toString)))
+      }
+      .toRight(ErrorMsg("Invalid Credentials"))
+      .value
+
+// alternative implementation, but I had to supply applicative to it explicitly because of diverging implicits
+
+//    val token = for {
+//      user <- dao.findByName(login.username)
+//      if validatePassword(login.password, user.pwdHash, user.salt)
+//      time <- OptionT.liftF(clock.monotonic(MILLISECONDS))
+//      token <- OptionT.some(Token(crypto.signToken(user.id.value.toString, time.toString)))(Applicative[F])
+//    } yield token
+//
+//    token.toRight(ErrorMsg("Invalid Credentials")).value
+
+  }
 
   def middleware: AuthMiddleware[F, User] = {
     val authUser: Kleisli[F, Request[F], Either[ErrorMsg, User]] = Kleisli { request =>
