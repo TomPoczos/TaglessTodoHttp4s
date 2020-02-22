@@ -23,7 +23,7 @@ class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])
       .withServiceErrorHandler(errorHandler(_))
       .resource
 
-  def errorHandler(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
+  private def errorHandler(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
     case ex: Throwable =>
       Applicative[F].pure(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
         InternalServerError(ErrorResponse("Something went wrong"))

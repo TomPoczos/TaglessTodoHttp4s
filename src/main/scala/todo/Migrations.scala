@@ -1,13 +1,13 @@
 package todo
 
-import cats.effect.IO
+import cats.effect.Sync
 import cats.implicits._
 import doobie.implicits._
 import doobie.Transactor
 
-class Migrations(transactor: Transactor[IO]) {
+class Migrations[F[_]:Sync](transactor: Transactor[F]) {
 
-  val migrations =
+  def run: F[List[Int]] = 
     List(
       sql"""
            |PRAGMA foreign_keys = ON
@@ -28,15 +28,10 @@ class Migrations(transactor: Transactor[IO]) {
            |  done tinyint not null default 0
            |)
            |"""
-    )
-
-  def run: IO[List[Int]] =
-    migrations.traverse {
-      _.stripMargin.update.run.transact(transactor)
-    }
+    ).traverse(_.stripMargin.update.run.transact(transactor))
 }
 
 object Migrations {
-  def apply(transactor: Transactor[IO]) =
+  def apply[F[_]:Sync](transactor: Transactor[F]) =
     new Migrations(transactor)
 }

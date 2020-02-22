@@ -21,7 +21,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
     with CirceInstances
     with CirceEntityEncoder {
 
-  val todoRoutes: RhoRoutes[F] =
+  private val todoRoutes: RhoRoutes[F] =
     new RhoRoutes[F]() {
       // ----------------------------------------------------------------------------------------------------------------------- //
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
@@ -50,11 +50,13 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       }
     }
 
-  val userRoutes: RhoRoutes[F] =
+  private val userRoutes: RhoRoutes[F] =
     new RhoRoutes[F] {
 
       "Login" **
-        POST / "auth" ^ jsonOf[F, Login] |>> { login: Login => Ok("") }
+        POST / "auth" ^ jsonOf[F, Login] |>> { login: Login =>
+        Ok("")
+      }
 
       "Create a new user" **
         POST / "auth" / "new" ^ jsonOf[F, Login] |>> { login: Login =>
@@ -69,7 +71,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       }
     }
 
-  val swaggerMiddleware: RhoMiddleware[F] =
+  private val swaggerMiddleware: RhoMiddleware[F] =
     SwaggerSupport
       .apply[F]
       .createRhoMiddleware(
@@ -85,11 +87,11 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
         )
       )
 
-  val router = Router[F](
+  private val router = Router[F](
     "/docs" -> fileService[F](FileService.Config[F]("./swagger")),
     config.basePath ->
       auth.middleware(
-        auth.toService(
+        auth.toAuthedRoutes(
           (todoRoutes and userRoutes).toRoutes(swaggerMiddleware)
         )
       )
@@ -102,12 +104,6 @@ object Routes {
       auth:          Authentication[F],
       dao:           TodoDao[F]
   )(implicit config: HttpServerConig with ApiInfoConfig): HttpRoutes[F] = {
-    val routes = new Routes(auth, dao)
-    ???
-    //    Router[F](
-    //      "/docs"         -> fileService[F](FileService.Config[F]("./swagger")),
-    //      config.basePath -> (routes.todoRoutes and routes.userRoutes)
-    //        .toRoutes(routes.authMiddleware.andThen(routes.swaggerMiddleware) )
-    //    )
+    new Routes(auth, dao).router
   }
 }
