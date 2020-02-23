@@ -27,19 +27,19 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
       // ---------------------------------------------------------------------------------------------------------------------- //
 
-      GET / "todo" >>> auth.auth |>> { user: User =>
+      GET >>> auth.auth |>> { user: User =>
         dao
           .findAll()
           .flatMap(Ok(_))
       }
 
-      POST / "todo" >>> auth.auth ^ jsonOf[F, CreateTodo] |>> { (user: User, createTodo: CreateTodo) =>
+      POST >>> auth.auth ^ jsonOf[F, CreateTodo] |>> { (user: User, createTodo: CreateTodo) =>
         dao
           .create(createTodo.name)
           .flatMap(_ => Ok(EmptyResponse()))
       }
 
-      POST / "todo" / pathVar[Int] >>> auth.auth |>> { (todoId: Int, user: User) =>
+      POST / pathVar[Int] >>> auth.auth |>> { (todoId: Int, user: User) =>
         dao.markAsDone(todoId).flatMap {
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
@@ -54,7 +54,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
     new RhoRoutes[F] {
 
       "Login" **
-        POST / "auth" ^ jsonOf[F, Login] |>> { login: Login =>
+        POST ^ jsonOf[F, Login] |>> { login: Login =>
         auth
           .issueToken(login)
           .flatMap {
@@ -66,7 +66,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       }
 
       "Create a new user" **
-        POST / "auth" / "new" ^ jsonOf[F, Login] |>> { login: Login =>
+        POST / "new" ^ jsonOf[F, Login] |>> { login: Login =>
       }
     }
 
@@ -88,10 +88,11 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
 
   private val router = Router[F](
     "/docs" -> fileService[F](FileService.Config[F]("./swagger")),
-    config.basePath ->
+    config.basePath + "/auth" ->userRoutes.toRoutes(swaggerMiddleware),
+    config.basePath + "/todo" ->
       auth.middleware(
         auth.toAuthedRoutes(
-          (todoRoutes and userRoutes).toRoutes(swaggerMiddleware)
+          todoRoutes.toRoutes(swaggerMiddleware)
         )
       )
   )
