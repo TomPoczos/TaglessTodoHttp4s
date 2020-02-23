@@ -1,0 +1,20 @@
+GET localhost:8080/v1/todo
+
+###
+
+POST localhost:8080/v1/todo
+
+###
+
+POST localhost:8080/v1/todo/10
+
+###
+
+POST localhost:8080/v1/auth
+
+###
+
+POST localhost:8080/v1/auth/new
+
+// {"name"=user1}
+###

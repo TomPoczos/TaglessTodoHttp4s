@@ -14,7 +14,7 @@ import org.http4s.{AuthedRoutes, Request}
 import org.reactormonk.{CryptoBits, PrivateKey}
 import todo.Algebras.UserDao
 import com.github.t3hnar.bcrypt._
-
+import User.Name.fromLoginUsername
 import scala.concurrent.duration.MILLISECONDS
 
 class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
@@ -23,8 +23,22 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
     with CirceEntityEncoder {
 
 
+
+
+  def createuser(login: Login) = {
+    val salt = generateSalt
+    dao.create(
+      User(
+        User.Id(1), // todo, this is unused
+        User.Name(login.username.value),
+        User.Salt(salt),
+        User.PwdHash((salt + login.password).bcrypt)
+      )
+    )
+  }
+
   def issueToken(login: Login) = { // : F[Either[ErrorMsg, Token]] = {
-    def validatePassword(password: Login.Password, hash: User.pwdHash, salt: User.Salt): Boolean =
+    def validatePassword(password: Login.Password, hash: User.PwdHash, salt: User.Salt): Boolean =
       (salt.value + password.value).isBcrypted(hash.value)
 
     dao
@@ -33,7 +47,7 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
       .semiflatMap { user =>
         clock
           .monotonic(MILLISECONDS)
-          .map(time => Token(crypto.signToken(user.id.value.toString, time.toString)))
+          .map(time => Token(crypto.signToken(user.name.value.toString, time.toString)))
       }
       .toRight(ErrorMsg("Invalid Credentials"))
       .value

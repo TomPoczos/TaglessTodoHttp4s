@@ -19,8 +19,9 @@ object Algebras {
   }
 
   trait UserDao[F[_]] {
-    def find(userId: User.Id): F[Option[User]]
+    def find(userId:         User.Id):   F[Option[User]]
     def findByName(username: User.Name): OptionT[F, User]
+    def create(User:         User):      F[Int]
   }
 }
 
@@ -44,18 +45,28 @@ object Interpreters {
         .transact(transactor)
 
     override def find(userId: User.Id): F[Option[User]] =
-        sql"select id, name, salt, pwdHash from user where id = '${userId.value}'"
-          .query[User]
-          .option
-          .transact(transactor)
+      sql"select id, name, salt, pwdHash from user where id = '${userId.value}'"
+        .query[User]
+        .option
+        .transact(transactor)
 
     override def findByName(username: User.Name): OptionT[F, User] =
       OptionT(
         sql"select id, name, salt, pwdHash from user where id = '${username.value}'"
-      .query[User]
-      .option
-      .transact(transactor)
+          .query[User]
+          .option
+          .transact(transactor)
       )
+
+    override def create(user: User): F[Int] = {
+      // apparently I get autoincrement for free
+      // https://www.sqlite.org/faq.html#q1
+
+      sql"""
+          | insert into user (name, salt, pwdHash)
+          | values ${user.name.value}, ${user.salt.value}, ${user.pwdHash.value}
+          |""".stripMargin.update.run.transact(transactor)
+    }
   }
 
   object Doobie {
