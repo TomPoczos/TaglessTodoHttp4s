@@ -66,7 +66,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       }
 
       "Create a new user" **
-        POST / "new" ^ jsonOf[F, Login] |>> { login: Login =>
+        POST / "new" ^ jsonOf[F, Login] |>> { login: Login => auth.createuser(login)
       }
     }
 

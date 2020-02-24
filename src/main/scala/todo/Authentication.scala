@@ -32,18 +32,18 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
         User.Id(1), // todo, this is unused
         User.Name(login.username.value),
         User.Salt(salt),
-        User.PwdHash((salt + login.password).bcrypt)
+        User.PwdHash((salt + login.password.value).bcrypt)
       )
     )
   }
 
   def issueToken(login: Login) = { // : F[Either[ErrorMsg, Token]] = {
-    def validatePassword(password: Login.Password, hash: User.PwdHash, salt: User.Salt): Boolean =
-      (salt.value + password.value).isBcrypted(hash.value)
+    def validatePassword(hash: User.PwdHash, salt: User.Salt): Boolean =
+      (salt.value + login.password.value).isBcrypted(hash.value)
 
     dao
       .findByName(login.username)
-      .filter(user => validatePassword(login.password, user.pwdHash, user.salt))
+      .filter(user => validatePassword(user.pwdHash, user.salt))
       .semiflatMap { user =>
         clock
           .monotonic(MILLISECONDS)
@@ -51,18 +51,6 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
       }
       .toRight(ErrorMsg("Invalid Credentials"))
       .value
-
-// alternative implementation, but I had to supply applicative to it explicitly because of diverging implicits
-
-//    val token = for {
-//      user <- dao.findByName(login.username)
-//      if validatePassword(login.password, user.pwdHash, user.salt)
-//      time <- OptionT.liftF(clock.monotonic(MILLISECONDS))
-//      token <- OptionT.some(Token(crypto.signToken(user.id.value.toString, time.toString)))(Applicative[F])
-//    } yield token
-//
-//    token.toRight(ErrorMsg("Invalid Credentials")).value
-
   }
 
   def middleware: AuthMiddleware[F, User] = {

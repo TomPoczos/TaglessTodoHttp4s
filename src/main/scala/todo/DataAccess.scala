@@ -44,27 +44,25 @@ object Interpreters {
       sql"update todo set done = 1 where id = $id".update.run
         .transact(transactor)
 
-    override def find(userId: User.Id): F[Option[User]] =
-      sql"select id, name, salt, pwdHash from user where id = '${userId.value}'"
+    override def find(userId: User.Id): F[Option[User]] = {
+      sql"select id, name, salt, pwdHash from user where id = ${userId.value}"
         .query[User]
         .option
         .transact(transactor)
+    }
 
     override def findByName(username: User.Name): OptionT[F, User] =
       OptionT(
-        sql"select id, name, salt, pwdHash from user where id = '${username.value}'"
+        sql"select id, name, salt, pwdHash from user where name = ${username.value}"
           .query[User]
           .option
           .transact(transactor)
       )
 
     override def create(user: User): F[Int] = {
-      // apparently I get autoincrement for free
-      // https://www.sqlite.org/faq.html#q1
-
       sql"""
           | insert into user (name, salt, pwdHash)
-          | values ${user.name.value}, ${user.salt.value}, ${user.pwdHash.value}
+          | values (${user.name.value}, ${user.salt.value}, ${user.pwdHash.value})
           |""".stripMargin.update.run.transact(transactor)
     }
   }

@@ -12,9 +12,24 @@ POST localhost:8080/v1/todo/10
 
 POST localhost:8080/v1/auth
 
+{
+  "username": {
+    "value": "string"
+  },
+  "password": {
+    "value": "string"
+  }
+}
 ###
 
 POST localhost:8080/v1/auth/new
 
-// {"name"=user1}
+{
+  "username": {
+    "value": "string"
+  },
+  "password": {
+    "value": "string"
+  }
+}
 ###
