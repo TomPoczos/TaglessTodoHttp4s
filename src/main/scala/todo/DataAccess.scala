@@ -11,17 +11,17 @@ object Algebras {
 
   trait TodoDao[F[_]] {
 
-    def findAll(): F[List[Todo]]
+    def findTodos(userId: User.Id): F[List[Todo]]
 
-    def create(name: String): F[Int]
+    def createTodo(name: String): F[Int]
 
     def markAsDone(id: Int): F[Int]
   }
 
   trait UserDao[F[_]] {
-    def find(userId:         User.Id):   F[Option[User]]
-    def findByName(username: User.Name): OptionT[F, User]
-    def create(User:         User):      F[Int]
+    def findUser(userId:         User.Id):   F[Option[User]]
+    def findUserByName(username: User.Name): OptionT[F, User]
+    def createUser(User:         User):      F[Int]
   }
 }
 
@@ -30,13 +30,13 @@ object Interpreters {
   import Algebras.TodoDao
 
   class Doobie[F[_]: Sync](transactor: Transactor[F]) extends TodoDao[F] with UserDao[F] {
-    override def findAll(): F[List[Todo]] =
-      sql"select id, name, done from todo"
+    override def findTodos(userId: User.Id): F[List[Todo]] =
+      sql"select id, name, done from todo where user_fk = ${userId.value}"
         .query[Todo]
         .to[List]
         .transact(transactor)
 
-    override def create(name: String): F[Int] =
+    override def createTodo(name: String): F[Int] =
       sql"insert into todo (name, done) values ($name, 0)".update.run
         .transact(transactor)
 
@@ -44,14 +44,14 @@ object Interpreters {
       sql"update todo set done = 1 where id = $id".update.run
         .transact(transactor)
 
-    override def find(userId: User.Id): F[Option[User]] = {
+    override def findUser(userId: User.Id): F[Option[User]] = {
       sql"select id, name, salt, pwdHash from user where id = ${userId.value}"
         .query[User]
         .option
         .transact(transactor)
     }
 
-    override def findByName(username: User.Name): OptionT[F, User] =
+    override def findUserByName(username: User.Name): OptionT[F, User] =
       OptionT(
         sql"select id, name, salt, pwdHash from user where name = ${username.value}"
           .query[User]
@@ -59,7 +59,7 @@ object Interpreters {
           .transact(transactor)
       )
 
-    override def create(user: User): F[Int] = {
+    override def createUser(user: User): F[Int] = {
       sql"""
           | insert into user (name, salt, pwdHash)
           | values (${user.name.value}, ${user.salt.value}, ${user.pwdHash.value})

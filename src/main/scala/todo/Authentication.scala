@@ -10,11 +10,12 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.Authorization
 import org.http4s.rho.AuthedContext
 import org.http4s.server.AuthMiddleware
-import org.http4s.{AuthedRoutes, Request}
+import org.http4s.{AuthedRoutes, Request, headers}
 import org.reactormonk.{CryptoBits, PrivateKey}
 import todo.Algebras.UserDao
 import com.github.t3hnar.bcrypt._
 import User.Name.fromLoginUsername
+
 import scala.concurrent.duration.MILLISECONDS
 
 class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
@@ -27,7 +28,7 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
 
   def createuser(login: Login) = {
     val salt = generateSalt
-    dao.create(
+    dao.createUser(
       User(
         User.Id(1), // todo, this is unused
         User.Name(login.username.value),
@@ -42,12 +43,12 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
       (salt.value + login.password.value).isBcrypted(hash.value)
 
     dao
-      .findByName(login.username)
+      .findUserByName(login.username)
       .filter(user => validatePassword(user.pwdHash, user.salt))
       .semiflatMap { user =>
         clock
           .monotonic(MILLISECONDS)
-          .map(time => Token(crypto.signToken(user.name.value.toString, time.toString)))
+          .map(time => Token(crypto.signToken(user.id.value.toString, time.toString)))
       }
       .toRight(ErrorMsg("Invalid Credentials"))
       .value
@@ -57,14 +58,14 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
     val authUser: Kleisli[F, Request[F], Either[ErrorMsg, User]] = Kleisli { request =>
       val message: Either[ErrorMsg, User.Id] = for {
         header <- request.headers.get(Authorization).toRight(ErrorMsg("Couldn't find an Authorization header"))
-        token <- crypto.validateSignedToken(header.value).toRight(ErrorMsg("Invalid token"))
+        token <- crypto.validateSignedToken(header.value.split(' ')(1)).toRight(ErrorMsg("Invalid token"))
         message <- Either.catchOnly[NumberFormatException](token.toInt).bimap(err => ErrorMsg(err.toString), User.Id)
       } yield message
 
       message
         .map(
           dao
-            .find(_)
+            .findUser(_)
             .map(_.toRight(ErrorMsg("user doesn't exist")))
         )
         .sequence

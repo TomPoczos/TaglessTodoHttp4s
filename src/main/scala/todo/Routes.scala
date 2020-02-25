@@ -29,13 +29,13 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
 
       GET >>> auth.auth |>> { user: User =>
         dao
-          .findAll()
+          .findTodos(user.id)
           .flatMap(Ok(_))
       }
 
       POST >>> auth.auth ^ jsonOf[F, CreateTodo] |>> { (user: User, createTodo: CreateTodo) =>
         dao
-          .create(createTodo.name)
+          .createTodo(createTodo.name)
           .flatMap(_ => Ok(EmptyResponse()))
       }
 

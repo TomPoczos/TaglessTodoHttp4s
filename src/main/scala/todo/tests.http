@@ -1,27 +1,15 @@
-GET localhost:8080/v1/todo
-
-###
-
-POST localhost:8080/v1/todo
-
-###
-
-POST localhost:8080/v1/todo/10
-
-###
-
 POST localhost:8080/v1/auth
 
 {
   "username": {
-    "value": "string"
+    "value": "user1"
   },
   "password": {
-    "value": "string"
+    "value": "user1Pwd"
   }
 }
-###
 
+###
 POST localhost:8080/v1/auth/new
 
 {
@@ -32,4 +20,22 @@ POST localhost:8080/v1/auth/new
     "value": "string"
   }
 }
+
+###
+
+GET localhost:8080/v1/todo
+Authorization: Bearer 923c75563e13a170446d9bf3ec10494c7ba75716-68517963-1
+
+###
+
+GET localhost:8080/v1/todo
+
+###
+
+POST localhost:8080/v1/todo
+
+###
+
+POST localhost:8080/v1/todo/10
+
 ###
