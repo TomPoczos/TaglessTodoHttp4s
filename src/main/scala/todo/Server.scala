@@ -9,10 +9,11 @@ import org.http4s.dsl.Http4sDsl
 import org.http4s.implicits._
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.{HttpRoutes, Request}
+import todo.Configuration.HttpServerConfig
 
 // at this point it might not be worth keeping this class and moveing what remains here to main...
 
-class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])(implicit config: HttpServerConig)
+class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])(implicit config: HttpServerConfig)
     extends Http4sDsl[F]
     with CirceEntityEncoder {
 
@@ -31,6 +32,6 @@ class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])
 }
 
 object Server {
-  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])(implicit config: HttpServerConig) =
+  def apply[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])(implicit config: HttpServerConfig) =
     new Server(routes)
 }

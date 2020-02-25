@@ -5,9 +5,9 @@ import cats.implicits._
 import doobie.implicits._
 import doobie.Transactor
 
-class Migrations[F[_]:Sync](transactor: Transactor[F]) {
+class Migrations[F[_]: Sync](transactor: Transactor[F]) {
 
-  def run: F[List[Int]] = 
+  def run: F[List[Int]] =
     List(
       sql"""
            |PRAGMA foreign_keys = ON
@@ -32,6 +32,6 @@ class Migrations[F[_]:Sync](transactor: Transactor[F]) {
 }
 
 object Migrations {
-  def apply[F[_]:Sync](transactor: Transactor[F]) =
+  def apply[F[_]: Sync](transactor: Transactor[F]) =
     new Migrations(transactor)
 }

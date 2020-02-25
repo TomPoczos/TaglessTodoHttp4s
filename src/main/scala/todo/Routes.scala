@@ -10,13 +10,13 @@ import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport, SwaggerSyntax}
 import org.http4s.rho.{RhoMiddleware, RhoRoutes}
 import org.http4s.server._
-import org.http4s.server.staticcontent.{fileService, FileService}
+import org.http4s.server.staticcontent.{FileService, fileService}
 import todo.Algebras.TodoDao
-
+import todo.Configuration.{ApiInfoConfig, HttpServerConfig}
 import scala.reflect.runtime.universe.typeOf
 
 class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao: TodoDao[F])(
-    implicit config: HttpServerConig with ApiInfoConfig
+    implicit config: HttpServerConfig with ApiInfoConfig
 ) extends SwaggerSyntax[F]
     with CirceInstances
     with CirceEntityEncoder {
@@ -103,7 +103,7 @@ object Routes {
   def apply[F[+_]: ConcurrentEffect: ContextShift](
       auth:          Authentication[F],
       dao:           TodoDao[F]
-  )(implicit config: HttpServerConig with ApiInfoConfig): HttpRoutes[F] = {
+  )(implicit config: HttpServerConfig with ApiInfoConfig): HttpRoutes[F] = {
     new Routes(auth, dao).router
   }
 }

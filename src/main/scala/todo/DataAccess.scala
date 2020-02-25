@@ -11,10 +11,8 @@ object Algebras {
 
   trait TodoDao[F[_]] {
 
-    def findTodos(userId: User.Id): F[List[Todo]]
-
-    def createTodo(name: String, userId: User.Id): F[Int]
-
+    def findTodos(userId:  User.Id): F[List[Todo]]
+    def createTodo(name:   String, userId: User.Id): F[Int]
     def markAsDone(todoId: Todo.Id, userId: User.Id): F[Int]
   }
 
@@ -37,13 +35,11 @@ object Interpreters {
         .transact(transactor)
 
     override def createTodo(name: String, userId: User.Id): F[Int] =
-      sql"insert into todo (user_fk, name, done) values (${userId.value}, ${name}, 0)"
-        .update.run.transact(transactor)
+      sql"insert into todo (user_fk, name, done) values (${userId.value}, ${name}, 0)".update.run.transact(transactor)
 
     override def markAsDone(todoId: Todo.Id, userId: User.Id): F[Int] =
-      sql"update todo set done = 1 where user_fk = ${userId.value} and id = ${todoId.value}"
-        .update.run.transact(transactor)
-
+      sql"update todo set done = 1 where user_fk = ${userId.value} and id = ${todoId.value}".update.run
+        .transact(transactor)
 
     override def findUser(userId: User.Id): F[Option[User]] = {
       sql"select id, name, salt, pwdHash from user where id = ${userId.value}"

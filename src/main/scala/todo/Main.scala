@@ -1,6 +1,6 @@
 package todo
 
-import cats.effect.{ExitCode, IO, IOApp, Sync}
+import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import doobie.Transactor
 import todo.Interpreters.Doobie
@@ -18,17 +18,16 @@ object Main extends IOApp {
       Migrations(
         transactor
       )
+    val doobie = Doobie(
+      transactor
+    )
     val serverResource =
       Server(
         Routes(
           Authentication(
-            Doobie(
-              transactor
-            )
+            doobie
           ),
-          Doobie(
-            transactor
-          )
+          doobie
         )
       ).resource
 

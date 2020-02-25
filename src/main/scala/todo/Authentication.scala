@@ -1,20 +1,19 @@
 package todo
 
+import Model.User.Name.fromLoginUsername
 import Model.{ErrorMsg, Login, Token, User}
-import cats.Applicative
-import cats.data.{EitherT, Kleisli, OptionT}
-import cats.effect.{Clock, _}
+import cats.data.{Kleisli, OptionT}
+import cats.effect._
 import cats.implicits._
+import com.github.t3hnar.bcrypt._
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.dsl.Http4sDsl
 import org.http4s.headers.Authorization
 import org.http4s.rho.AuthedContext
 import org.http4s.server.AuthMiddleware
-import org.http4s.{AuthedRoutes, Request, headers}
+import org.http4s.{AuthedRoutes, Request}
 import org.reactormonk.{CryptoBits, PrivateKey}
 import todo.Algebras.UserDao
-import com.github.t3hnar.bcrypt._
-import User.Name.fromLoginUsername
 
 import scala.concurrent.duration.MILLISECONDS
 
@@ -22,9 +21,6 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
     extends Http4sDsl[F]
     with CirceInstances
     with CirceEntityEncoder {
-
-
-
 
   def createuser(login: Login) = {
     val salt = generateSalt
