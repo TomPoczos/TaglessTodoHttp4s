@@ -13,7 +13,7 @@ object Algebras {
 
     def findTodos(userId: User.Id): F[List[Todo]]
 
-    def createTodo(name: String): F[Int]
+    def createTodo(name: String, userId: User.Id): F[Int]
 
     def markAsDone(id: Int): F[Int]
   }
@@ -36,9 +36,9 @@ object Interpreters {
         .to[List]
         .transact(transactor)
 
-    override def createTodo(name: String): F[Int] =
-      sql"insert into todo (name, done) values ($name, 0)".update.run
-        .transact(transactor)
+    override def createTodo(name: String, userId: User.Id): F[Int] =
+      sql"insert into todo (user_fk, name, done) values (${userId.value}, ${name}, 0)"
+        .update.run.transact(transactor)
 
     override def markAsDone(id: Int): F[Int] =
       sql"update todo set done = 1 where id = $id".update.run
