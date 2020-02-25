@@ -1,8 +1,7 @@
 package todo
 
 import Model._
-import cats._
-import cats.effect.{ConcurrentEffect, ContextShift}
+import cats.effect.{ConcurrentEffect, ContextShift, Sync}
 import cats.implicits._
 import org.http4s._
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
@@ -13,6 +12,7 @@ import org.http4s.server._
 import org.http4s.server.staticcontent.{FileService, fileService}
 import todo.Algebras.TodoDao
 import todo.Configuration.{ApiInfoConfig, HttpServerConfig}
+
 import scala.reflect.runtime.universe.typeOf
 
 class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao: TodoDao[F])(
@@ -44,7 +44,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
           case _ =>
-            Applicative[F].pure(println(s"Inconsistent data: More than one todo updated in POST /todo/${todoId}")) *>
+            Sync[F].delay(println(s"Inconsistent data: More than one todo updated in POST /todo/${todoId}")) *>
               InternalServerError(ErrorResponse("Ooops, something went wrong..."))
         }
       }

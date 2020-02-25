@@ -1,8 +1,7 @@
 package todo
 
 import _root_.Model.ErrorResponse
-import cats.Applicative
-import cats.effect.{ConcurrentEffect, ContextShift, Resource, Timer}
+import cats.effect.{ConcurrentEffect, ContextShift, Resource, Sync, Timer}
 import cats.implicits._
 import org.http4s.circe.CirceEntityEncoder
 import org.http4s.dsl.Http4sDsl
@@ -26,7 +25,7 @@ class Server[F[_]: ConcurrentEffect: ContextShift: Timer](routes: HttpRoutes[F])
 
   private def errorHandler(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
     case ex: Throwable =>
-      Applicative[F].pure(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
+      Sync[F].delay(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
         InternalServerError(ErrorResponse("Something went wrong"))
   }
 }
