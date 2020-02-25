@@ -34,7 +34,7 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
     )
   }
 
-  def issueToken(login: Login) = { // : F[Either[ErrorMsg, Token]] = {
+  def issueToken(login: Login): F[Either[ErrorMsg, Token]] = {
     def validatePassword(hash: User.PwdHash, salt: User.Salt): Boolean =
       (salt.value + login.password.value).isBcrypted(hash.value)
 
