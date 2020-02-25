@@ -29,6 +29,7 @@ Authorization: Bearer 91921269439295b4c1c5b77748465174d87fb896-141532940-1
 ###
 
 GET localhost:8080/v1/todo
+Authorization: Bearer 91921269439295b4c1c5b77748465174d87fb896-141532940-1
 
 ###
 
@@ -39,6 +40,7 @@ Authorization: Bearer 91921269439295b4c1c5b77748465174d87fb896-141532940-1
 
 ###
 
-POST localhost:8080/v1/todo/10
+POST localhost:8080/v1/todo/1
+Authorization: Bearer 91921269439295b4c1c5b77748465174d87fb896-141532940-1
 
 ###
