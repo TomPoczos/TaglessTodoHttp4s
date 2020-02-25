@@ -1,15 +1,8 @@
 package object todo
 
+import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import org.http4s.rho.swagger.models.{Model, ModelImpl, StringProperty}
-
-// considered full automatic derivation but probably prefer having all this boilerplate to remembering the auto import
-// at each use site
-
-// added some wrapper case classes to avoid the primitive obsession antipattern,
-// although the extra boilerplate code and more complex json is a tradeoff not necessarily worth it in all cases.
-
-// opted for nesting rather than hungarian notation-like prependings before generic class names
 
 package object Model {
 
@@ -21,29 +14,25 @@ package object Model {
 
   object Todo {
 
-    case class Id(value: Int)
-
-    object Id {
-      implicit val encoder = deriveEncoder[Todo.Id]
-      implicit val decoder = deriveDecoder[Todo.Id]
-    }
-
+    case class Id(value:   Int)
     case class Name(value: String)
-
-    object Name {
-      implicit val encoder = deriveEncoder[Todo.Name]
-      implicit val decoder = deriveDecoder[Todo.Name]
-    }
-
     case class Done(value: Boolean)
 
-    object Done {
-      implicit val encoder = deriveEncoder[Todo.Done]
-      implicit val decoder = deriveDecoder[Todo.Done]
-    }
+    implicit val todoDecoder: Decoder[Todo] =
+      (c: HCursor) =>
+        for {
+          id <- c.downField("id").as[Int]
+          name <- c.downField("name").as[String]
+          done <- c.downField("done").as[Boolean]
+        } yield Todo(Id(id), Name(name), Done(done))
 
-    implicit val encoder = deriveEncoder[Todo]
-    implicit val decoder = deriveDecoder[Todo]
+    implicit val todoEncoder: Encoder[Todo] =
+      (todo: Todo) =>
+        Json.obj(
+          ("id", Json.fromInt(todo.id.value)),
+          ("name", Json.fromString(todo.name.value)),
+          ("done", Json.fromBoolean(todo.done.value))
+        )
   }
 
   case class CreateTodo(name: String)
@@ -90,21 +79,21 @@ package object Model {
 
   object Login {
     case class Username(value: String)
-
-    object Username {
-      implicit val encoder = deriveEncoder[Username]
-      implicit val decoder = deriveDecoder[Username]
-    }
-
     case class Password(value: String)
 
-    object Password {
-      implicit val encoder = deriveEncoder[Password]
-      implicit val decoder = deriveDecoder[Password]
-    }
+    implicit val loginDecoder: Decoder[Login] =
+      (c: HCursor) =>
+        for {
+          username <- c.downField("username").as[String]
+          password <- c.downField("password").as[String]
+        } yield Login(Username(username), Password(password))
 
-    implicit val encoder = deriveEncoder[Login]
-    implicit val decoder = deriveDecoder[Login]
+    implicit val loginEncoder: Encoder[Login] =
+      (login: Login) =>
+        Json.obj(
+          ("username", Json.fromString(login.username.value)),
+          ("password", Json.fromString(login.password.value))
+        )
   }
 
   case class User(

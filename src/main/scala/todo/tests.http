@@ -1,24 +1,16 @@
 POST localhost:8080/v1/auth
 
 {
-  "username": {
-    "value": "string"
-  },
-  "password": {
-    "value": "string"
-  }
+  "username": "string",
+  "password": "string"
 }
 
 ###
 POST localhost:8080/v1/auth/new
 
 {
-  "username": {
-    "value": "string"
-  },
-  "password": {
-    "value": "string"
-  }
+  "username": "string",
+  "password": "string"
 }
 
 ###
