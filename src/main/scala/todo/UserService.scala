@@ -7,7 +7,7 @@ import com.github.t3hnar.bcrypt._
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.dsl.Http4sDsl
 import org.reactormonk.CryptoBits
-import todo.Algebras.UserDao
+import todo.dataaccess.Algebras.UserDao
 
 import scala.concurrent.duration.MILLISECONDS
 
@@ -41,8 +41,6 @@ class UserService[F[_]:Sync:UserDao](implicit crypto: CryptoBits)
   }
 
   private val clock = Clock.create
-
-
 }
 
 object UserService {

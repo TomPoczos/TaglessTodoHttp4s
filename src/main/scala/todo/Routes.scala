@@ -14,7 +14,7 @@ import org.http4s.server.{AuthMiddleware, _}
 import org.http4s.server.staticcontent.{fileService, FileService}
 import org.http4s.{AuthedRoutes, Request, _}
 import org.reactormonk.CryptoBits
-import todo.Algebras.{TodoDao, UserDao}
+import todo.dataaccess.Algebras.{TodoDao, UserDao}
 import todo.Configuration.{ApiInfoConfig, HttpServerConfig}
 
 import scala.reflect.runtime.universe.typeOf
@@ -112,7 +112,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift: UserService: TodoDao: UserDa
 
   private object Auth extends AuthedContext[F, User]
 
-  private val router = Router[F](
+  val router = Router[F](
     "/docs"                   -> fileService[F](FileService.Config[F]("./swagger")),
     config.basePath + "/auth" -> userRoutes.toRoutes(swaggerMiddleware),
     config.basePath + "/todo" ->
@@ -130,7 +130,5 @@ object Routes {
       implicit
       config: HttpServerConfig with ApiInfoConfig,
       crypto: CryptoBits
-  ): HttpRoutes[F] = {
-    new Routes().router
-  }
+  ): Routes[F] = new Routes
 }
