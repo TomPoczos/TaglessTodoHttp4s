@@ -5,7 +5,7 @@ import cats.implicits._
 import doobie.implicits._
 import doobie.Transactor
 
-class Migrations[F[_]: Sync](transactor: Transactor[F]) {
+class Migrations[F[_]:Sync:Transactor] {
 
   def run: F[List[Int]] =
     List(
@@ -28,10 +28,9 @@ class Migrations[F[_]: Sync](transactor: Transactor[F]) {
            |  done tinyint not null default 0
            |)
            |"""
-    ).traverse(_.stripMargin.update.run.transact(transactor))
+    ).traverse(_.stripMargin.update.run.transact(F))
 }
 
 object Migrations {
-  def apply[F[_]: Sync](transactor: Transactor[F]) =
-    new Migrations(transactor)
+  def apply[F[_]:Sync:Transactor] = new Migrations[F]
 }

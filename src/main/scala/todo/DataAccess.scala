@@ -27,25 +27,25 @@ object Interpreters {
 
   import Algebras.TodoDao
 
-  class Doobie[F[_]: Sync](transactor: Transactor[F]) extends TodoDao[F] with UserDao[F] {
+  class Doobie[F[_]:Sync:Transactor] extends TodoDao[F] with UserDao[F] {
     override def findTodos(userId: User.Id): F[List[Todo]] =
       sql"select id, name, done from todo where user_fk = ${userId.value}"
         .query[Todo]
         .to[List]
-        .transact(transactor)
+        .transact(F)
 
     override def createTodo(name: String, userId: User.Id): F[Int] =
-      sql"insert into todo (user_fk, name, done) values (${userId.value}, ${name}, 0)".update.run.transact(transactor)
+      sql"insert into todo (user_fk, name, done) values (${userId.value}, ${name}, 0)".update.run.transact(F)
 
     override def markAsDone(todoId: Todo.Id, userId: User.Id): F[Int] =
       sql"update todo set done = 1 where user_fk = ${userId.value} and id = ${todoId.value}".update.run
-        .transact(transactor)
+        .transact(F)
 
     override def findUser(userId: User.Id): F[Option[User]] = {
       sql"select id, name, salt, pwdHash from user where id = ${userId.value}"
         .query[User]
         .option
-        .transact(transactor)
+        .transact(F)
     }
 
     override def findUserByName(username: User.Name): OptionT[F, User] =
@@ -53,18 +53,18 @@ object Interpreters {
         sql"select id, name, salt, pwdHash from user where name = ${username.value}"
           .query[User]
           .option
-          .transact(transactor)
+          .transact(F)
       )
 
     override def createUser(user: User): F[Int] = {
       sql"""
           | insert into user (name, salt, pwdHash)
           | values (${user.name.value}, ${user.salt.value}, ${user.pwdHash.value})
-          |""".stripMargin.update.run.transact(transactor)
+          |""".stripMargin.update.run.transact(F)
     }
   }
 
   object Doobie {
-    def apply[F[_]: Sync](xa: Transactor[F]) = new Doobie[F](xa)
+    def apply[F[_]:Sync:Transactor] = new Doobie[F]
   }
 }

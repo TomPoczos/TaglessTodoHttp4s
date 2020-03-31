@@ -9,13 +9,13 @@ import org.http4s.rho.swagger.models._
 import org.http4s.rho.swagger.{DefaultSwaggerFormats, SwaggerSupport, SwaggerSyntax}
 import org.http4s.rho.{RhoMiddleware, RhoRoutes}
 import org.http4s.server._
-import org.http4s.server.staticcontent.{FileService, fileService}
+import org.http4s.server.staticcontent.{fileService, FileService}
 import todo.Algebras.TodoDao
 import todo.Configuration.{ApiInfoConfig, HttpServerConfig}
 
 import scala.reflect.runtime.universe.typeOf
 
-class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao: TodoDao[F])(
+class Routes[F[+_]: ConcurrentEffect: ContextShift: Authentication: TodoDao](
     implicit config: HttpServerConfig with ApiInfoConfig
 ) extends SwaggerSyntax[F]
     with CirceInstances
@@ -27,20 +27,17 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       //  NOTE: If you run into issues with divergent implicits check out this issue https://github.com/http4s/rho/issues/292   //
       // ---------------------------------------------------------------------------------------------------------------------- //
 
-      GET >>> auth.auth |>> { user: User =>
-        dao
-          .findTodos(user.id)
-          .flatMap(Ok(_))
+      GET >>> F.auth |>> { user: User =>
+        F.findTodos(user.id).flatMap(Ok(_))
       }
 
-      POST >>> auth.auth ^ jsonOf[F, CreateTodo] |>> { (user: User, createTodo: CreateTodo) =>
-        dao
-          .createTodo(createTodo.name, user.id)
+      POST >>> F.auth ^ jsonOf[F, CreateTodo] |>> { (user: User, createTodo: CreateTodo) =>
+        F.createTodo(createTodo.name, user.id)
           .flatMap(_ => Ok(EmptyResponse()))
       }
 
-      POST / pathVar[Int] >>> auth.auth |>> { (todoId: Int, user: User) =>
-        dao.markAsDone(Todo.Id(todoId), user.id).flatMap {
+      POST / pathVar[Int] >>> F.auth |>> { (todoId: Int, user: User) =>
+        F.markAsDone(Todo.Id(todoId), user.id).flatMap {
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
           case _ =>
@@ -55,8 +52,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
 
       "Login" **
         POST ^ jsonOf[F, Login] |>> { login: Login =>
-        auth
-          .issueToken(login)
+        F.issueToken(login)
           .flatMap {
             case Left(error) =>
               Forbidden(error.value)
@@ -66,7 +62,8 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       }
 
       "Create a new user" **
-        POST / "new" ^ jsonOf[F, Login] |>> { login: Login => auth.createuser(login)
+        POST / "new" ^ jsonOf[F, Login] |>> { login: Login =>
+        F.createuser(login)
       }
     }
 
@@ -87,11 +84,11 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
       )
 
   private val router = Router[F](
-    "/docs" -> fileService[F](FileService.Config[F]("./swagger")),
-    config.basePath + "/auth" ->userRoutes.toRoutes(swaggerMiddleware),
+    "/docs"                   -> fileService[F](FileService.Config[F]("./swagger")),
+    config.basePath + "/auth" -> userRoutes.toRoutes(swaggerMiddleware),
     config.basePath + "/todo" ->
-      auth.middleware(
-        auth.toAuthedRoutes(
+      F.middleware(
+        F.toAuthedRoutes(
           todoRoutes.toRoutes(swaggerMiddleware)
         )
       )
@@ -100,10 +97,8 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift](auth: Authentication[F], dao
 
 object Routes {
 
-  def apply[F[+_]: ConcurrentEffect: ContextShift](
-      auth:          Authentication[F],
-      dao:           TodoDao[F]
-  )(implicit config: HttpServerConfig with ApiInfoConfig): HttpRoutes[F] = {
-    new Routes(auth, dao).router
+  def apply[F[+_]: ConcurrentEffect: ContextShift: Authentication:TodoDao]
+  (implicit config: HttpServerConfig with ApiInfoConfig): HttpRoutes[F] = {
+    new Routes().router
   }
 }

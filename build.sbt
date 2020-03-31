@@ -9,7 +9,10 @@ scalaVersion := "2.12.10"
 resolvers += Resolver.sonatypeRepo("releases")
 scalacOptions += "-Ypartial-unification"
 
-addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
+addCompilerPlugin("com.olegpy"     %% "better-monadic-for" % "0.3.1")
+addCompilerPlugin("org.typelevel"  %% "kind-projector"     % "0.10.3")
+addCompilerPlugin("org.augustjune" %% "context-applied"    % "0.1.2")
+
 
 fork in run := true
 
@@ -30,5 +33,3 @@ libraryDependencies ++= Seq(
   "org.reactormonk"    %% "cryptobits"           % "1.3",
   "com.github.t3hnar"  %% "scala-bcrypt"         % "4.1"
 )
-
-addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3")

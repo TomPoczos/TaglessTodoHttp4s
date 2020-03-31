@@ -17,14 +17,14 @@ import todo.Algebras.UserDao
 
 import scala.concurrent.duration.MILLISECONDS
 
-class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
+class Authentication[F[_]:Sync:UserDao](implicit secrets: Secrets)
     extends Http4sDsl[F]
     with CirceInstances
     with CirceEntityEncoder {
 
   def createuser(login: Login) = {
     val salt = generateSalt
-    dao.createUser(
+    F.createUser(
       User(
         User.Id(1), // todo, this is unused
         User.Name(login.username.value),
@@ -38,8 +38,7 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
     def validatePassword(hash: User.PwdHash, salt: User.Salt): Boolean =
       (salt.value + login.password.value).isBcrypted(hash.value)
 
-    dao
-      .findUserByName(login.username)
+    F.findUserByName(login.username)
       .filter(user => validatePassword(user.pwdHash, user.salt))
       .semiflatMap { user =>
         clock
@@ -60,8 +59,7 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
 
       message
         .map(
-          dao
-            .findUser(_)
+          F.findUser(_)
             .map(_.toRight(ErrorMsg("user doesn't exist")))
         )
         .sequence
@@ -92,5 +90,5 @@ class Authentication[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets)
 }
 
 object Authentication {
-  def apply[F[_]: Sync](dao: UserDao[F])(implicit secrets: Secrets) = new Authentication(dao)
+  def apply[F[_]:Sync:UserDao](implicit secrets: Secrets) = new Authentication()
 }

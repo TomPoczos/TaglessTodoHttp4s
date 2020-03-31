@@ -10,27 +10,16 @@ object Main extends IOApp {
 
     implicit val config = Config
 
-    val transactor = Transactor.fromDriverManager[IO](
+    implicit val transactor = Transactor.fromDriverManager[IO](
       Config.dbDriver,
       Config.dbUrl
     )
-    val migrations =
-      Migrations(
-        transactor
-      )
-    val doobie = Doobie(
-      transactor
-    )
-    val serverResource =
-      Server(
-        Routes(
-          Authentication(
-            doobie
-          ),
-          doobie
-        )
-      ).resource
+    implicit val migrations = Migrations[IO]
+    implicit val doobie = Doobie[IO]
+    implicit val auth = Authentication[IO]
+    implicit val routes = Routes[IO]
+    implicit val server = Server[IO]
 
-    migrations.run *> serverResource.use(_ => IO.never) *> IO(ExitCode.Success)
+    migrations.run *> server.resource.use(_ => IO.never) *> IO(ExitCode.Success)
   }
 }
