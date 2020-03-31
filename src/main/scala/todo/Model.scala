@@ -6,25 +6,26 @@ import org.http4s.rho.swagger.models.{Model, ModelImpl, StringProperty}
 
 package object Model {
 
+  case class TodoId(value:   Int)
+
+  case class TodoName(value: String)
+  
+  case class TodoDone(value: Boolean)
+
   case class Todo(
-      id:   Todo.Id,
-      name: Todo.Name,
-      done: Todo.Done
+      id:   TodoId,
+      name: TodoName,
+      done: TodoDone
   )
 
   object Todo {
-
-    case class Id(value:   Int)
-    case class Name(value: String)
-    case class Done(value: Boolean)
-
     implicit val todoDecoder: Decoder[Todo] =
       (c: HCursor) =>
         for {
           id <- c.downField("id").as[Int]
           name <- c.downField("name").as[String]
           done <- c.downField("done").as[Boolean]
-        } yield Todo(Id(id), Name(name), Done(done))
+        } yield Todo(TodoId(id), TodoName(name), TodoDone(done))
 
     implicit val todoEncoder: Encoder[Todo] =
       (todo: Todo) =>
@@ -75,11 +76,11 @@ package object Model {
     implicit val decoder = deriveDecoder[ErrorResponse]
   }
 
-  case class Login(username: Login.Username, password: Login.Password)
+  case class Password(value: String)
+
+  case class Login(username: Username, password: Password)
 
   object Login {
-    case class Username(value: String)
-    case class Password(value: String)
 
     implicit val loginDecoder: Decoder[Login] =
       (c: HCursor) =>
@@ -96,31 +97,27 @@ package object Model {
         )
   }
 
+  case class UserId(value:   Int)
+
+  case class Salt(value:     String)
+
+  case class PwdHash(value:  String)
+
+  case class Username(value: String)
+
   case class User(
-      id:      User.Id,
-      name:    User.Name,
-      salt:    User.Salt,
-      pwdHash: User.PwdHash
+      id:      UserId,
+      name:    Username,
+      salt:    Salt,
+      pwdHash: PwdHash
   )
-
-  object User {
-    case class Id(value:   Int)
-    case class Name(value: String)
-
-    object Name {
-      implicit def fromLoginUsername(name: Login.Username) =
-        User.Name(name.value)
-    }
-
-    case class Salt(value:    String)
-    case class PwdHash(value: String)
-  }
 
   case class Authenticated(value: Boolean)
 
   case class Token(value: String)
 
   case class ErrorMsg(value: String)
+  
   object ErrorMsg {
     implicit val encoder = deriveEncoder[ErrorMsg]
     implicit val decoder = deriveDecoder[ErrorMsg]

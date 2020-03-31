@@ -1,6 +1,6 @@
 package todo
 
-import Model.{Todo, User}
+import Model._
 import cats.data.OptionT
 import cats.effect.Sync
 import doobie.Transactor
@@ -11,15 +11,15 @@ object Algebras {
 
   trait TodoDao[F[_]] {
 
-    def findTodos(userId:  User.Id): F[List[Todo]]
-    def createTodo(name:   String, userId: User.Id): F[Int]
-    def markAsDone(todoId: Todo.Id, userId: User.Id): F[Int]
+    def findTodos(userId:  UserId): F[List[Todo]]
+    def createTodo(name:   String, userId: UserId): F[Int]
+    def markAsDone(todoId: TodoId, userId: UserId): F[Int]
   }
 
   trait UserDao[F[_]] {
-    def findUser(userId:         User.Id): F[Option[User]]
-    def findUserByName(username: User.Name): OptionT[F, User]
-    def createUser(name:         User.Name, salt: User.Salt, pwdHash: User.PwdHash): F[Int]
+    def findUser(userId:         UserId): F[Option[User]]
+    def findUserByName(username: Username): OptionT[F, User]
+    def createUser(name:         Username, salt: Salt, pwdHash: PwdHash): F[Int]
   }
 }
 
@@ -28,27 +28,27 @@ object Interpreters {
   import Algebras.TodoDao
 
   class Doobie[F[_]: Sync: Transactor] extends TodoDao[F] with UserDao[F] {
-    override def findTodos(userId: User.Id): F[List[Todo]] =
+    override def findTodos(userId: UserId): F[List[Todo]] =
       sql"select id, name, done from todo where user_fk = ${userId.value}"
         .query[Todo]
         .to[List]
         .transact(F)
 
-    override def createTodo(name: String, userId: User.Id): F[Int] =
+    override def createTodo(name: String, userId: UserId): F[Int] =
       sql"insert into todo (user_fk, name, done) values (${userId.value}, ${name}, 0)".update.run.transact(F)
 
-    override def markAsDone(todoId: Todo.Id, userId: User.Id): F[Int] =
+    override def markAsDone(todoId: TodoId, userId: UserId): F[Int] =
       sql"update todo set done = 1 where user_fk = ${userId.value} and id = ${todoId.value}".update.run
         .transact(F)
 
-    override def findUser(userId: User.Id): F[Option[User]] = {
+    override def findUser(userId: UserId): F[Option[User]] = {
       sql"select id, name, salt, pwdHash from user where id = ${userId.value}"
         .query[User]
         .option
         .transact(F)
     }
 
-    override def findUserByName(username: User.Name): OptionT[F, User] =
+    override def findUserByName(username: Username): OptionT[F, User] =
       OptionT(
         sql"select id, name, salt, pwdHash from user where name = ${username.value}"
           .query[User]
@@ -56,7 +56,7 @@ object Interpreters {
           .transact(F)
       )
 
-    override def createUser(name: User.Name, salt: User.Salt, pwdHash: User.PwdHash): F[Int] = {
+    override def createUser(name: Username, salt: Salt, pwdHash: PwdHash): F[Int] = {
       sql"""
           | insert into user (name, salt, pwdHash)
           | values (${name.value}, ${salt.value}, ${pwdHash.value})

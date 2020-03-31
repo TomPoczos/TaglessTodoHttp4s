@@ -37,7 +37,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift: Authentication: TodoDao](
       }
 
       POST / pathVar[Int] >>> F.auth |>> { (todoId: Int, user: User) =>
-        F.markAsDone(Todo.Id(todoId), user.id).flatMap {
+        F.markAsDone(TodoId(todoId), user.id).flatMap {
           case 0 => NotFound(ErrorResponse(s"Todo with id: `${todoId}` not found"))
           case 1 => Ok(EmptyResponse())
           case _ =>

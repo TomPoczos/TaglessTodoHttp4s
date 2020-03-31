@@ -1,7 +1,6 @@
 package todo
 
-import Model.User.Name.fromLoginUsername
-import Model.{ErrorMsg, Login, Token, User}
+import Model._
 import cats.data.{Kleisli, OptionT}
 import cats.effect._
 import cats.implicits._
@@ -25,14 +24,14 @@ class Authentication[F[_]:Sync:UserDao](implicit secrets: Secrets)
   def createuser(login: Login) = {
     val salt = generateSalt
     F.createUser(
-        User.Name(login.username.value),
-        User.Salt(salt),
-        User.PwdHash((salt + login.password.value).bcrypt)
+        Username(login.username.value),
+        Salt(salt),
+        PwdHash((salt + login.password.value).bcrypt)
     )
   }
 
   def issueToken(login: Login): F[Either[ErrorMsg, Token]] = {
-    def validatePassword(hash: User.PwdHash, salt: User.Salt): Boolean =
+    def validatePassword(hash: PwdHash, salt: Salt): Boolean =
       (salt.value + login.password.value).isBcrypted(hash.value)
 
     F.findUserByName(login.username)
@@ -48,10 +47,10 @@ class Authentication[F[_]:Sync:UserDao](implicit secrets: Secrets)
 
   def middleware: AuthMiddleware[F, User] = {
     val authUser: Kleisli[F, Request[F], Either[ErrorMsg, User]] = Kleisli { request =>
-      val message: Either[ErrorMsg, User.Id] = for {
+      val message: Either[ErrorMsg, UserId] = for {
         header <- request.headers.get(Authorization).toRight(ErrorMsg("Couldn't find an Authorization header"))
         token <- crypto.validateSignedToken(header.value.split(' ')(1)).toRight(ErrorMsg("Invalid token"))
-        message <- Either.catchOnly[NumberFormatException](token.toInt).bimap(err => ErrorMsg(err.toString), User.Id)
+        message <- Either.catchOnly[NumberFormatException](token.toInt).bimap(err => ErrorMsg(err.toString), UserId)
       } yield message
 
       message
