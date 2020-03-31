@@ -1,6 +1,7 @@
 package todo
 
-import Model._
+package object Interpreters {
+  import todo.Model._
 import cats.effect._
 import cats.implicits._
 import com.github.t3hnar.bcrypt._
@@ -8,15 +9,17 @@ import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
 import org.http4s.dsl.Http4sDsl
 import org.reactormonk.CryptoBits
 import todo.dataaccess.Algebras.UserDao
+import todo.services.Algebras.UserService
 
 import scala.concurrent.duration.MILLISECONDS
 
-class UserService[F[_]:Sync:UserDao](implicit crypto: CryptoBits)
-    extends Http4sDsl[F]
+class UserServiceInterpreter[F[_]:Sync:UserDao](implicit crypto: CryptoBits)
+    extends UserService[F]
+    with Http4sDsl[F]
     with CirceInstances
     with CirceEntityEncoder {
 
-  def createuser(login: Login) = {
+  override def createuser(login: Login) = {
     val salt = generateSalt
     F.createUser(
         Username(login.username.value),
@@ -25,7 +28,7 @@ class UserService[F[_]:Sync:UserDao](implicit crypto: CryptoBits)
     )
   }
 
-  def authenticate(login: Login): F[Either[ErrorMsg, Token]] = {
+  override def authenticate(login: Login): F[Either[ErrorMsg, Token]] = {
     def validatePassword(hash: PwdHash, salt: Salt): Boolean =
       (salt.value + login.password.value).isBcrypted(hash.value)
 
@@ -43,6 +46,7 @@ class UserService[F[_]:Sync:UserDao](implicit crypto: CryptoBits)
   private val clock = Clock.create
 }
 
-object UserService {
-  def apply[F[_]:Sync:UserDao](implicit crypto: CryptoBits) = new UserService()
+object UserServiceInterpreter {
+  def apply[F[_]:Sync:UserDao](implicit crypto: CryptoBits) = new UserServiceInterpreter()
+}
 }

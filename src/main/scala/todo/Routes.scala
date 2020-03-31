@@ -3,7 +3,7 @@ package todo
 import cats.effect.{ConcurrentEffect, ContextShift, Sync}
 import org.http4s.headers.Authorization
 import org.http4s.rho.swagger.models._
-import _root_.Model._
+import todo.Model._
 import cats.data.{Kleisli, OptionT}
 import cats.implicits._
 import org.http4s.circe.{CirceEntityEncoder, CirceInstances}
@@ -16,6 +16,7 @@ import org.http4s.{AuthedRoutes, Request, _}
 import org.reactormonk.CryptoBits
 import todo.dataaccess.Algebras.{TodoDao, UserDao}
 import todo.Configuration.{ApiInfoConfig, HttpServerConfig}
+import todo.services.Algebras.UserService
 
 import scala.reflect.runtime.universe.typeOf
 import org.http4s.rho.AuthedContext
@@ -56,7 +57,7 @@ class Routes[F[+_]: ConcurrentEffect: ContextShift: UserService: TodoDao: UserDa
     new RhoRoutes[F] {
 
       "Login" **
-        POST ^ jsonOf[F, Login] |>> { login: Login =>
+        POST ^ jsonOf[F, todo.Model.Login] |>> { login: todo.Model.Login =>
         F.authenticate(login)
           .flatMap {
             case Left(error) =>

@@ -1,4 +1,4 @@
-package object todo
+package todo
 
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}

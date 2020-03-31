@@ -1,9 +1,9 @@
 package todo.dataaccess
 
-import Model._
+import todo.Model._
 import cats.data.OptionT
 
-object Algebras {
+package object Algebras {
 
   trait TodoDao[F[_]] {
 

@@ -1,6 +1,6 @@
 package todo.dataaccess.interpreters
 
-import Model._
+import todo.Model._
 import cats.implicits._
 import cats.data.OptionT
 import cats.effect.Sync

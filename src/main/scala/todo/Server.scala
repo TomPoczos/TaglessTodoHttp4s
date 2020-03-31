@@ -1,6 +1,6 @@
 package todo
 
-import _root_.Model.ErrorResponse
+import todo.Model.ErrorResponse
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Sync, Timer}
 import cats.implicits._
 import org.http4s.circe.CirceEntityEncoder
