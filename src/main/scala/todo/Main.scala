@@ -3,6 +3,7 @@ package todo
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.implicits._
 import doobie.Transactor
+import org.reactormonk.{CryptoBits, PrivateKey}
 import todo.Interpreters.Doobie
 
 object Main extends IOApp {
@@ -10,13 +11,20 @@ object Main extends IOApp {
 
     implicit val config = Config
 
+    implicit val crypto =
+      CryptoBits(
+        PrivateKey(
+          scala.io.Codec.toUTF8(config.encryptionKey)
+        )
+      )
+
     implicit val transactor = Transactor.fromDriverManager[IO](
       Config.dbDriver,
       Config.dbUrl
     )
     implicit val migrations = Migrations[IO]
     implicit val doobie = Doobie[IO]
-    implicit val auth = Authentication[IO]
+    implicit val userService = UserService[IO]
     implicit val routes = Routes[IO]
     implicit val server = Server[IO]
 

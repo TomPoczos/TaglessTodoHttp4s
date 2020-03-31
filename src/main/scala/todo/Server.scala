@@ -10,7 +10,7 @@ import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.{HttpRoutes, Request}
 import todo.Configuration.HttpServerConfig
 
-class Server[F[_]:ConcurrentEffect:ContextShift:Timer](implicit routes: HttpRoutes[F], config: HttpServerConfig)
+class Server[F[_]: ConcurrentEffect: ContextShift: Timer](implicit routes: HttpRoutes[F], config: HttpServerConfig)
     extends Http4sDsl[F]
     with CirceEntityEncoder {
 
@@ -23,12 +23,12 @@ class Server[F[_]:ConcurrentEffect:ContextShift:Timer](implicit routes: HttpRout
 
   private def errorHandler(request: Request[F]): PartialFunction[Throwable, F[org.http4s.Response[F]]] = {
     case ex: Throwable =>
-      Sync[F].delay(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
+      F.delay(println(s"UNHANDLED: ${ex}\n${ex.getStackTrace.mkString("\n")}")) *>
         InternalServerError(ErrorResponse("Something went wrong"))
   }
 }
 
 object Server {
-  def apply[F[_]:ConcurrentEffect:ContextShift:Timer: HttpRoutes](implicit config: HttpServerConfig) =
+  def apply[F[_]: ConcurrentEffect: ContextShift: Timer: HttpRoutes](implicit config: HttpServerConfig) =
     new Server
 }
