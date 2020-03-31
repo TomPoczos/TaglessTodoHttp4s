@@ -25,12 +25,9 @@ class Authentication[F[_]:Sync:UserDao](implicit secrets: Secrets)
   def createuser(login: Login) = {
     val salt = generateSalt
     F.createUser(
-      User(
-        User.Id(1), // todo, this is unused
         User.Name(login.username.value),
         User.Salt(salt),
         User.PwdHash((salt + login.password.value).bcrypt)
-      )
     )
   }
 

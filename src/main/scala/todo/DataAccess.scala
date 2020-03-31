@@ -17,9 +17,9 @@ object Algebras {
   }
 
   trait UserDao[F[_]] {
-    def findUser(userId:         User.Id):   F[Option[User]]
+    def findUser(userId:         User.Id): F[Option[User]]
     def findUserByName(username: User.Name): OptionT[F, User]
-    def createUser(User:         User):      F[Int]
+    def createUser(name:         User.Name, salt: User.Salt, pwdHash: User.PwdHash): F[Int]
   }
 }
 
@@ -27,7 +27,7 @@ object Interpreters {
 
   import Algebras.TodoDao
 
-  class Doobie[F[_]:Sync:Transactor] extends TodoDao[F] with UserDao[F] {
+  class Doobie[F[_]: Sync: Transactor] extends TodoDao[F] with UserDao[F] {
     override def findTodos(userId: User.Id): F[List[Todo]] =
       sql"select id, name, done from todo where user_fk = ${userId.value}"
         .query[Todo]
@@ -56,15 +56,15 @@ object Interpreters {
           .transact(F)
       )
 
-    override def createUser(user: User): F[Int] = {
+    override def createUser(name: User.Name, salt: User.Salt, pwdHash: User.PwdHash): F[Int] = {
       sql"""
           | insert into user (name, salt, pwdHash)
-          | values (${user.name.value}, ${user.salt.value}, ${user.pwdHash.value})
+          | values (${name.value}, ${salt.value}, ${pwdHash.value})
           |""".stripMargin.update.run.transact(F)
     }
   }
 
   object Doobie {
-    def apply[F[_]:Sync:Transactor] = new Doobie[F]
+    def apply[F[_]: Sync: Transactor] = new Doobie[F]
   }
 }
