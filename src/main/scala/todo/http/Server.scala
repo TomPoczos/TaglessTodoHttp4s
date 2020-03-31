@@ -1,4 +1,4 @@
-package todo
+package todo.http
 
 import todo.Model.ErrorResponse
 import cats.effect.{ConcurrentEffect, ContextShift, Resource, Sync, Timer}

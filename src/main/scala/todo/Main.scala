@@ -6,6 +6,7 @@ import doobie.Transactor
 import org.reactormonk.{CryptoBits, PrivateKey}
 import dataaccess.interpreters._
 import todo.Interpreters.`package`.UserServiceInterpreter
+import todo.http._
 
 object Main extends IOApp {
   def run(args: List[String]): IO[ExitCode] = {

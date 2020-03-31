@@ -1,4 +1,4 @@
-package todo
+package todo.http
 
 import cats.effect.{ConcurrentEffect, ContextShift, Sync}
 import org.http4s.headers.Authorization
