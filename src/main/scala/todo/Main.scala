@@ -5,7 +5,7 @@ import cats.implicits._
 import doobie.Transactor
 import org.reactormonk.{CryptoBits, PrivateKey}
 import dataaccess.interpreters._
-import todo.Interpreters.`package`.UserServiceInterpreter
+import todo.services.Interpreters.UserServiceInterpreter
 import todo.http._
 
 object Main extends IOApp {
@@ -27,9 +27,8 @@ object Main extends IOApp {
     implicit val userDao     = UserDaoInterpreter[IO]
     implicit val todoDao     = TodoDaoInterpreter[IO]
     implicit val userService = UserServiceInterpreter[IO]
-    implicit val routes      = Routes[IO].router
-    implicit val server      = Server[IO]
+    implicit val router      = Routes[IO].router
 
-    migrations.run *> server.resource.use(_ => IO.never) *> IO(ExitCode.Success)
+    migrations.run *> Server[IO].resource.use(_ => IO.never) *> IO(ExitCode.Success)
   }
 }

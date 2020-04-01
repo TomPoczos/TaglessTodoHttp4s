@@ -10,14 +10,14 @@ import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.{HttpRoutes, Request}
 import todo.Configuration.HttpServerConfig
 
-class Server[F[_]: ConcurrentEffect: ContextShift: Timer](implicit routes: HttpRoutes[F], config: HttpServerConfig)
+class Server[F[_]: ConcurrentEffect: ContextShift: Timer](implicit router: HttpRoutes[F], config: HttpServerConfig)
     extends Http4sDsl[F]
     with CirceEntityEncoder {
 
   val resource: Resource[F, org.http4s.server.Server[F]] =
     BlazeServerBuilder[F]
       .bindHttp(config.port, config.host)
-      .withHttpApp(routes.orNotFound)
+      .withHttpApp(router.orNotFound)
       .withServiceErrorHandler(errorHandler(_))
       .resource
 

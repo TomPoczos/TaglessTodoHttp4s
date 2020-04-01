@@ -1,4 +1,4 @@
-package todo
+package todo.services
 
 package object Interpreters {
   import todo.Model._
